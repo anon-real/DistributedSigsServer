@@ -1,10 +1,9 @@
-
-# Routes
-# This file defines all application routes (Higher priority routes first)
-# ~~~~
-
-# An example controller showing a sample home page
 GET     /                           controllers.HomeController.index
+POST    /createTeam                 controllers.AsyncController.createTeam
+GET     /createTeam                 controllers.AsyncController.createTeamFrom
+
+
+
 # An example controller showing how to use dependency injection
 GET     /count                      controllers.CountController.count
 # An example controller showing how to write asynchronous code
