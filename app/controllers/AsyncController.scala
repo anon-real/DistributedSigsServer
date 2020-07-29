@@ -26,15 +26,15 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 @Singleton
 class AsyncController @Inject()(cc: ControllerComponents, actorSystem: ActorSystem)(implicit exec: ExecutionContext) extends AbstractController(cc) {
 
-  def createTeamFrom = Action.async {
+  def createTeamFrom: Action[AnyContent] = Action.async { implicit request: Request[AnyContent] =>
     getFutureMessage(0.second).map { msg =>
       Ok(views.html.create_team())
     }
   }
 
-  def createTeam = Action.async {
+  def createTeam: Action[AnyContent] = Action.async { implicit request =>
     getFutureMessage(1.second).map { msg =>
-      Ok(views.html.create_team())
+      Ok("shit")
     }
   }
 

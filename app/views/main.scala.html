@@ -23,9 +23,9 @@
                 <input class="form-control mr-sm-2" type="search" placeholder="Team name" aria-label="Search">
                 <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search team</button>
             </form>
-            <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Create a team</button>
+            <a href="@routes.AsyncController.createTeamFrom()"><button class="btn btn-outline-success my-2 my-sm-0" type="submit">Create a team</button></a>
         </nav>
-        <div class="container">
+        <div class="container p-3 my-3 border bg-light">
 
 
             @content
