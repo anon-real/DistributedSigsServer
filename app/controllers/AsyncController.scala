@@ -1,9 +1,11 @@
 package controllers
 
 import javax.inject._
-
 import akka.actor.ActorSystem
+import dao.TeamDAO
 import play.api.mvc._
+import play.api.data._
+import models.Forms._
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -24,18 +26,25 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
  *                    a blocking API.
  */
 @Singleton
-class AsyncController @Inject()(cc: ControllerComponents, actorSystem: ActorSystem)(implicit exec: ExecutionContext) extends AbstractController(cc) {
+class AsyncController @Inject()(teams: TeamDAO, cc: ControllerComponents, actorSystem: ActorSystem)(implicit exec: ExecutionContext) extends AbstractController(cc) {
 
-  def createTeamFrom: Action[AnyContent] = Action.async { implicit request: Request[AnyContent] =>
+  def createTeamFrom = Action.async { implicit request =>
     getFutureMessage(0.second).map { msg =>
       Ok(views.html.create_team())
     }
   }
 
-  def createTeam: Action[AnyContent] = Action.async { implicit request =>
-    getFutureMessage(1.second).map { msg =>
-      Ok("shit")
-    }
+  def createTeam = Action(parse.form(teamForm)).async { implicit request =>
+    teams.insert(request.body).map(_ => {
+      Redirect(routes.AsyncController.teamList(request.body.name))
+    })
+  }
+
+  def teamList(name: String) = Action.async { implicit request =>
+    if (name.isBlank)
+      teams.all().map(teams => Ok(views.html.team_list(teams)))
+    else
+      teams.search("%" + name + "%").map(teams => Ok(views.html.team_list(teams)))
   }
 
   /**

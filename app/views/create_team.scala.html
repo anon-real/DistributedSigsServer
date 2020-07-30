@@ -2,7 +2,7 @@
 @import views.html.helper.form
 @()(implicit header: RequestHeader)
     @main("Create a New Team") {
-        @form(routes.AsyncController.createTeam()) {
+            <form enctype="application/json" method="post" action="@routes.AsyncController.createTeam()">
             @CSRF.formField
             <div class="form-group row">
                 <label for="name" class="col-sm-2 col-form-label">Name</label>
@@ -16,7 +16,7 @@
                 <div class="col-sm-10">
                     <input name="address" type="text" class="form-control" id="address" placeholder="4MQyML64GnzMxZgm" required>
                     <small id="emailHelp" class="form-text text-muted">
-                        Address which protects your boxes, e.g. threshold signature.</small>
+                        Distributed signature address protecting boxes, e.g. threshold signature.</small>
                 </div>
             </div>
             <div class="form-group row">
@@ -26,5 +26,5 @@
                 </div>
             </div>
             <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Create</button>
-        }
+    </form>
     }

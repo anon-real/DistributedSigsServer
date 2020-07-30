@@ -14,13 +14,14 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+        <script src="@routes.Assets.versioned("javascripts/default.js")" type="text/javascript"></script>
         <title>@title</title>
     </head>
     <body>
         <nav class="navbar navbar-light bg-light">
             <a class="navbar-brand" href="/">Distributed Signatures on Top of <b>ERGO</b></a>
-            <form class="form-inline">
-                <input class="form-control mr-sm-2" type="search" placeholder="Team name" aria-label="Search">
+            <form class="form-inline" method="get" action="/">
+                <input name="name" class="form-control mr-sm-2" type="search" placeholder="Team name" aria-label="Search" required>
                 <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search team</button>
             </form>
             <a href="@routes.AsyncController.createTeamFrom()"><button class="btn btn-outline-success my-2 my-sm-0" type="submit">Create a team</button></a>

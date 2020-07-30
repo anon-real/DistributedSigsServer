@@ -1,4 +1,4 @@
-GET     /                           controllers.HomeController.index
+GET     /                           controllers.AsyncController.teamList(name: String ?= "")
 POST    /createTeam                 controllers.AsyncController.createTeam
 GET     /createTeam                 controllers.AsyncController.createTeamFrom
 
