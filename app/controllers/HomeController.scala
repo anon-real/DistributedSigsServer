@@ -1,14 +1,18 @@
 package controllers
 
+import dao.TeamDAO
 import javax.inject._
+import models.Team
 import play.api.mvc._
+
+import scala.concurrent.ExecutionContext
 
 /**
  * This controller creates an `Action` to handle HTTP requests to the
  * application's home page.
  */
 @Singleton
-class HomeController @Inject()(cc: ControllerComponents) extends AbstractController(cc) {
+class HomeController @Inject()(teams: TeamDAO, cc: ControllerComponents)(implicit executionContext: ExecutionContext) extends AbstractController(cc) {
 
   /**
    * Create an Action to render an HTML page with a welcome message.

@@ -1,0 +1,23 @@
+@(teams: Seq[Team])
+
+@main("Teams List") {
+    @if(teams.isEmpty) {
+        <div class="jumbotron jumbotron-fluid">
+            <div class="container">
+                <p class="lead">No team has been found! Add a team <a href="@routes.AsyncController.createTeamFrom()">here.</a></p>
+            </div>
+        </div>
+    } else {
+        @for(team <- teams) {
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">@team.name</h5>
+                    <p style="white-space: pre-line" class="card-text">@team.description</p>
+                    <a href="#" class="card-link" data-toggle="tooltip" data-placement="bottom" title="Add your proposal!">Make a request</a>
+                </div>
+            </div>
+            <br/>
+        }
+    }
+
+}
