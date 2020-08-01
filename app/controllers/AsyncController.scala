@@ -2,10 +2,11 @@ package controllers
 
 import javax.inject._
 import akka.actor.ActorSystem
-import dao.TeamDAO
+import dao.{RequestDAO, TeamDAO}
 import play.api.mvc._
 import play.api.data._
 import models.Forms._
+import models.RequestStatus
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -26,7 +27,8 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
  *                    a blocking API.
  */
 @Singleton
-class AsyncController @Inject()(teams: TeamDAO, cc: ControllerComponents, actorSystem: ActorSystem)(implicit exec: ExecutionContext) extends AbstractController(cc) {
+class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO,
+                                cc: ControllerComponents, actorSystem: ActorSystem)(implicit exec: ExecutionContext) extends AbstractController(cc) {
 
   def createTeamFrom = Action.async { implicit request =>
     getFutureMessage(0.second).map { msg =>
@@ -45,6 +47,23 @@ class AsyncController @Inject()(teams: TeamDAO, cc: ControllerComponents, actorS
       teams.all().map(teams => Ok(views.html.team_list(teams)))
     else
       teams.search("%" + name + "%").map(teams => Ok(views.html.team_list(teams)))
+  }
+
+  def newRequest() = Action(parse.form(requestForm)).async { implicit request =>
+    request.body.status = Some(RequestStatus.pendingApproval)
+    requests.insert(request.body).map(_ => {
+      Ok(views.html.team_list(Seq()))
+    })
+  }
+
+  def proposalList(teamId: Long) = Action.async { implicit request =>
+    val team = teams.byId(teamId)
+    val reqs = requests.teamProposals(teamId)
+    val aggFut = for {
+      f <- team
+      s <- reqs
+    } yield (f, s)
+    aggFut.map(res => Ok(views.html.request_list(res._2, res._1)))
   }
 
   /**

@@ -2,7 +2,7 @@
 @import views.html.helper.form
 @()(implicit header: RequestHeader)
     @main("Create a New Team") {
-            <form enctype="application/json" method="post" action="@routes.AsyncController.createTeam()">
+        <form method="post" action="@routes.AsyncController.createTeam()">
             @CSRF.formField
             <div class="form-group row">
                 <label for="name" class="col-sm-2 col-form-label">Name</label>
@@ -26,5 +26,5 @@
                 </div>
             </div>
             <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Create</button>
-    </form>
+        </form>
     }

@@ -32,10 +32,7 @@ class TeamDAO @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)
 
   def all(): Future[Seq[Team]] = db.run(teams.result)
 
+  def byId(id: Long): Future[Team] = db.run(teams.filter(team => team.id === id).result.head)
+
   def search(par: String): Future[Seq[Team]] = db.run(teams.filter(team => team.name.toLowerCase like par.toLowerCase).result)
-
-  val query = for {
-    team <- teams if team.name.toLowerCase like "%expresso%"
-  } yield ()
-
 }
