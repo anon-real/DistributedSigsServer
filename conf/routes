@@ -1,6 +1,8 @@
 GET     /                           controllers.AsyncController.teamList(name: String ?= "")
 POST    /createTeam                 controllers.AsyncController.createTeam
 GET     /createTeam                 controllers.AsyncController.createTeamFrom
+POST    /newRequest                 controllers.AsyncController.newRequest()
+GET     /requstList/:teamId          controllers.AsyncController.proposalList(teamId: Long)
 
 
 
