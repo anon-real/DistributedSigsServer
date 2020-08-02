@@ -33,6 +33,8 @@ class RequestDAO @Inject() (protected val dbConfigProvider: DatabaseConfigProvid
 
   def insert(request: Request): Future[Unit] = db.run(requests += request).map(_ => ())
 
+  def byId(id: Long): Future[Request] = db.run(requests.filter(req => req.id === id).result.head)
+
   def teamProposals(teamId: Long): Future[Seq[Request]] = db.run(requests.filter(_.teamId === teamId).result)
 
   def all(): Future[Seq[Request]] = db.run(requests.result)

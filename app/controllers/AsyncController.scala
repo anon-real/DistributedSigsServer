@@ -49,13 +49,13 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
     })
     res.map(_ => Ok(
       s"""{
-        |  "redirect": "${routes.AsyncController.teamList(name)}"
-        |}""".stripMargin).as("application/json")
+         |  "redirect": "${routes.AsyncController.teamList(name)}"
+         |}""".stripMargin).as("application/json")
     ).recover {
       case e: Exception => BadRequest(
-          s"""{
-             |  "message": "${e.getMessage}"
-             |}""".stripMargin).as("application/json")
+        s"""{
+           |  "message": "${e.getMessage}"
+           |}""".stripMargin).as("application/json")
     }
   }
 
@@ -87,12 +87,22 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
     val body = request.body
     val a = (body \\ "a").head.as[String]
     val pk = (body \\ "pk").head.as[String]
-    commitments.insert(Commitment(pk, a, requestId)).map(_ => {
-      Ok(
-        """{
-          |  "status": true
-          |}""".stripMargin
-      ).as("application/json")
+    requests.byId(requestId).map(req => {
+      if (req.status.get == RequestStatus.pendingApproval) {
+        commitments.insert(Commitment(pk, a, requestId))
+        Ok(
+          """{
+            |  "status": true
+            |}""".stripMargin
+        ).as("application/json")
+      } else {
+        BadRequest(
+          s"""{
+             |  "status": false,
+             |  "message": "request is already marked as ${req.status.get}"
+             |}""".stripMargin
+        ).as("application/json")
+      }
     }).recover {
       case e: Exception =>
         val err = e.getMessage.replace("\"", "").replace("\n", "")
@@ -102,13 +112,15 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
              |  "message": "$err"
              |}""".stripMargin
         ).as("application/json")
+
     }
   }
 
   def setTx(reqId: Long) = Action(parse.json).async { implicit request =>
     val isPartial: Boolean = (request.body \\ "isPartial").head.as[Boolean]
+    val pk: String = (request.body \\ "tx").head.as[String]
     val tx: String = (request.body \\ "tx").head.toString()
-    transactions.insert(Transaction(reqId, isPartial, tx.getBytes("utf-16"), isValid = false, isConfirmed = false)).map(_ => {
+    transactions.insert(Transaction(reqId, isPartial, tx.getBytes("utf-16"), isValid = false, isConfirmed = false, pk)).map(_ => {
       Ok(
         """{
           |  "status": true
@@ -129,7 +141,7 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
   def test(reqId: Long) = Action(parse.json) { implicit request =>
     val isPartial: Boolean = (request.body \\ "isPartial").head.as[Boolean]
     val tx: String = (request.body \\ "tx").head.toString()
-    transactions.insert(Transaction(reqId, isPartial, tx.getBytes("utf-16"), false, false)).onComplete(res => {
+    transactions.insert(Transaction(reqId, isPartial, tx.getBytes("utf-16"), false, false, pk)).onComplete(res => {
       println(res)
     })
     transactions.all().onComplete(res => {

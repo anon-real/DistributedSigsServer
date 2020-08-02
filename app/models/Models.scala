@@ -17,6 +17,6 @@ case class Request(title: String, amount: Long, description: String, address: St
 
 case class Commitment(pk: String, a: String, reqId: Long)
 
-case class Transaction(reqId: Long, isPartial: Boolean, bytes: Array[Byte], isValid: Boolean, isConfirmed: Boolean) {
+case class Transaction(reqId: Long, isPartial: Boolean, bytes: Array[Byte], isValid: Boolean, isConfirmed: Boolean, pk: String) {
     override def toString: String = new String(bytes, StandardCharsets.UTF_16)
 }

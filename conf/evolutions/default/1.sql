@@ -40,17 +40,19 @@ CREATE TABLE Commitment (
 );
 
 CREATE TABLE Transaction (
+    pk VARCHAR(1000) NOT NULL,
     request_id BIGINT(20) NOT NULL,
     is_partial BIT NOT NULL DEFAULT(1),
     tx_bytes BLOB NOT NULL,
     is_valid BIT NOT NULL DEFAULT(0),
     is_confirmed BIT NOT NULL DEFAULT(0),
     FOREIGN KEY (request_id) REFERENCES Request(id) ON DELETE CASCADE,
-    PRIMARY KEY (request_id, is_partial)
+    FOREIGN KEY (pk) REFERENCES Member(pk) ON DELETE CASCADE,
+    PRIMARY KEY (request_id, pk)
 );
 
 -- !Downs
-DROP TABLE Commitment
-DROP TABLE Request;
-DROP TABLE Member;
-DROP TABLE Team;
+DROP TABLE COMMITMENT;
+DROP TABLE REQUEST;
+DROP TABLE MEMEBER;
+DROP TABLE TEAM;
