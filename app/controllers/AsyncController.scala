@@ -2,11 +2,11 @@ package controllers
 
 import javax.inject._
 import akka.actor.ActorSystem
-import dao.{CommitmentDAO, MemberDAO, RequestDAO, TeamDAO}
+import dao.{CommitmentDAO, MemberDAO, RequestDAO, TeamDAO, TransactionDAO}
 import play.api.mvc._
 import play.api.data._
 import models.Forms._
-import models.{Commitment, Member, RequestStatus, Team}
+import models.{Commitment, Member, RequestStatus, Team, Transaction}
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -29,6 +29,7 @@ import scala.util.{Failure, Success}
  */
 @Singleton
 class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitments: CommitmentDAO, members: MemberDAO,
+                                transactions: TransactionDAO,
                                 cc: ControllerComponents, actorSystem: ActorSystem)(implicit exec: ExecutionContext) extends AbstractController(cc) {
 
   def createTeamFrom = Action.async { implicit request =>
@@ -39,9 +40,9 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
 
   def createTeam = Action(parse.json).async { implicit request =>
     val reqMembers = (request.body \\ "pks").head.as[List[String]]
-    val name = (request.body \\ "name").head.toString()
-    val description = (request.body \\ "description").head.toString()
-    val address = (request.body \\ "address").head.toString()
+    val name = (request.body \\ "name").head.as[String]
+    val description = (request.body \\ "description").head.as[String]
+    val address = (request.body \\ "address").head.as[String]
     println(name)
     val res = teams.insert(Team(name, description, address)).map(id => {
       reqMembers.foreach(pk => members.insert(Member(pk, id)))
@@ -84,23 +85,57 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
 
   def newCommitment(requestId: Long) = Action(parse.json).async { implicit request =>
     val body = request.body
-    val a = (body \\ "a").head.toString()
-    val pk = (body \\ "pk").head.toString()
+    val a = (body \\ "a").head.as[String]
+    val pk = (body \\ "pk").head.as[String]
     commitments.insert(Commitment(pk, a, requestId)).map(_ => {
       Ok(
         """{
           |  "status": true
-          |}""".stripMargin).as("application/json")
+          |}""".stripMargin
+      ).as("application/json")
     }).recover {
-      case e: Exception => {
+      case e: Exception =>
         val err = e.getMessage.replace("\"", "").replace("\n", "")
         BadRequest(
           s"""{
              |  "status": false,
              |  "message": "$err"
-             |}""".stripMargin).as("application/json")
-      }
+             |}""".stripMargin
+        ).as("application/json")
     }
+  }
+
+  def setTx(reqId: Long) = Action(parse.json).async { implicit request =>
+    val isPartial: Boolean = (request.body \\ "isPartial").head.as[Boolean]
+    val tx: String = (request.body \\ "tx").head.toString()
+    transactions.insert(Transaction(reqId, isPartial, tx.getBytes("utf-16"), isValid = false, isConfirmed = false)).map(_ => {
+      Ok(
+        """{
+          |  "status": true
+          |}""".stripMargin
+      ).as("application/json")
+    }).recover {
+      case e: Exception =>
+        val err = e.getMessage.replace("\"", "").replace("\n", "")
+        BadRequest(
+          s"""{
+             |  "status": false,
+             |  "message": "$err"
+             |}""".stripMargin
+        ).as("application/json")
+    }
+  }
+
+  def test(reqId: Long) = Action(parse.json) { implicit request =>
+    val isPartial: Boolean = (request.body \\ "isPartial").head.as[Boolean]
+    val tx: String = (request.body \\ "tx").head.toString()
+    transactions.insert(Transaction(reqId, isPartial, tx.getBytes("utf-16"), false, false)).onComplete(res => {
+      println(res)
+    })
+    transactions.all().onComplete(res => {
+      res.get.foreach(tx => println(tx.toString()))
+    })
+    Ok("ok")
   }
 
   /**

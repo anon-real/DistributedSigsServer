@@ -5,6 +5,7 @@ GET         /createTeam                              controllers.AsyncController
 POST        /newRequest                              controllers.AsyncController.newRequest()
 GET         /requstList/:teamId                      controllers.AsyncController.proposalList(teamId: Long)
 POST        /request/:requestId/newCommitment        controllers.AsyncController.newCommitment(requestId: Long)
+POST        /setTx/:reqId                            controllers.AsyncController.setTx(reqId: Long)
 
 
 
@@ -16,4 +17,5 @@ GET         /message                                 controllers.AsyncController
 # Map static resources from the /public folder to the /assets URL path
 GET         /assets/*file                            controllers.Assets.versioned(path="/public", file: Asset)
 
-      
+
+POST        /test/:reqId                             controllers.AsyncController.test(reqId: Long)
