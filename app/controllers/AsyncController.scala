@@ -141,7 +141,7 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
   def test(reqId: Long) = Action(parse.json) { implicit request =>
     val isPartial: Boolean = (request.body \\ "isPartial").head.as[Boolean]
     val tx: String = (request.body \\ "tx").head.toString()
-    transactions.insert(Transaction(reqId, isPartial, tx.getBytes("utf-16"), false, false, pk)).onComplete(res => {
+    transactions.insert(Transaction(reqId, isPartial, tx.getBytes("utf-16"), false, false, "")).onComplete(res => {
       println(res)
     })
     transactions.all().onComplete(res => {
