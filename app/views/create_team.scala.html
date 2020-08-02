@@ -2,7 +2,7 @@
 @import views.html.helper.form
 @()(implicit header: RequestHeader)
     @main("Create a New Team") {
-        <form method="post" action="@routes.AsyncController.createTeam()">
+        <form id="createTeamForm" method="post" action="@routes.AsyncController.createTeam()">
             @CSRF.formField
             <div class="form-group row">
                 <label for="name" class="col-sm-2 col-form-label">Name</label>
@@ -20,11 +20,20 @@
                 </div>
             </div>
             <div class="form-group row">
+                <label for="pks" class="col-sm-2 col-form-label">Public keys</label>
+                <div class="col-sm-10">
+                    <textarea name="pks" class="form-control" id="pks" placeholder='["02b353d...", "0354efc...", "023564..."]' required></textarea>
+                    <small id="emailHelp" class="form-text text-muted">
+                        Enter list of public keys participating in the signature! e.g. pkA, pkB, pkC in case of "atLeast(2, Coll(proveDlog(pkA), proveDlog(pkB), proveDlog(pkC)))"
+                    </small>
+                </div>
+            </div>
+            <div class="form-group row">
                 <label for="description" class="col-sm-2 col-form-label">Description</label>
                 <div class="col-sm-10">
                     <textarea name="description" class="form-control" id="description" placeholder="This team includes all Ergo board members and ..." required></textarea>
                 </div>
             </div>
-            <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Create</button>
+            <button class="btn btn-outline-success my-2 my-sm-0" >Create</button>
         </form>
     }

@@ -1,17 +1,19 @@
-GET     /                           controllers.AsyncController.teamList(name: String ?= "")
-POST    /createTeam                 controllers.AsyncController.createTeam
-GET     /createTeam                 controllers.AsyncController.createTeamFrom
-POST    /newRequest                 controllers.AsyncController.newRequest()
-GET     /requstList/:teamId          controllers.AsyncController.proposalList(teamId: Long)
+GET         /                                        controllers.AsyncController.teamList(name: String ?= "")
++nocsrf
+POST        /createTeam                              controllers.AsyncController.createTeam
+GET         /createTeam                              controllers.AsyncController.createTeamFrom
+POST        /newRequest                              controllers.AsyncController.newRequest()
+GET         /requstList/:teamId                      controllers.AsyncController.proposalList(teamId: Long)
+POST        /request/:requestId/newCommitment        controllers.AsyncController.newCommitment(requestId: Long)
 
 
 
 # An example controller showing how to use dependency injection
-GET     /count                      controllers.CountController.count
+GET         /count                                   controllers.CountController.count
 # An example controller showing how to write asynchronous code
-GET     /message                    controllers.AsyncController.message
+GET         /message                                 controllers.AsyncController.message
 
 # Map static resources from the /public folder to the /assets URL path
-GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
+GET         /assets/*file                            controllers.Assets.versioned(path="/public", file: Asset)
 
       

@@ -2,14 +2,15 @@ package controllers
 
 import javax.inject._
 import akka.actor.ActorSystem
-import dao.{RequestDAO, TeamDAO}
+import dao.{CommitmentDAO, MemberDAO, RequestDAO, TeamDAO}
 import play.api.mvc._
 import play.api.data._
 import models.Forms._
-import models.RequestStatus
+import models.{Commitment, Member, RequestStatus, Team}
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.{Failure, Success}
 
 /**
  * This controller creates an `Action` that demonstrates how to write
@@ -27,7 +28,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
  *                    a blocking API.
  */
 @Singleton
-class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO,
+class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitments: CommitmentDAO, members: MemberDAO,
                                 cc: ControllerComponents, actorSystem: ActorSystem)(implicit exec: ExecutionContext) extends AbstractController(cc) {
 
   def createTeamFrom = Action.async { implicit request =>
@@ -36,10 +37,25 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO,
     }
   }
 
-  def createTeam = Action(parse.form(teamForm)).async { implicit request =>
-    teams.insert(request.body).map(_ => {
-      Redirect(routes.AsyncController.teamList(request.body.name))
+  def createTeam = Action(parse.json).async { implicit request =>
+    val reqMembers = (request.body \\ "pks").head.as[List[String]]
+    val name = (request.body \\ "name").head.toString()
+    val description = (request.body \\ "description").head.toString()
+    val address = (request.body \\ "address").head.toString()
+    println(name)
+    val res = teams.insert(Team(name, description, address)).map(id => {
+      reqMembers.foreach(pk => members.insert(Member(pk, id)))
     })
+    res.map(_ => Ok(
+      s"""{
+        |  "redirect": "${routes.AsyncController.teamList(name)}"
+        |}""".stripMargin).as("application/json")
+    ).recover {
+      case e: Exception => BadRequest(
+          s"""{
+             |  "message": "${e.getMessage}"
+             |}""".stripMargin).as("application/json")
+    }
   }
 
   def teamList(name: String) = Action.async { implicit request =>
@@ -52,7 +68,7 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO,
   def newRequest() = Action(parse.form(requestForm)).async { implicit request =>
     request.body.status = Some(RequestStatus.pendingApproval)
     requests.insert(request.body).map(_ => {
-      Ok(views.html.team_list(Seq()))
+      Redirect(routes.AsyncController.proposalList(request.body.teamId))
     })
   }
 
@@ -64,6 +80,27 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO,
       s <- reqs
     } yield (f, s)
     aggFut.map(res => Ok(views.html.request_list(res._2, res._1)))
+  }
+
+  def newCommitment(requestId: Long) = Action(parse.json).async { implicit request =>
+    val body = request.body
+    val a = (body \\ "a").head.toString()
+    val pk = (body \\ "pk").head.toString()
+    commitments.insert(Commitment(pk, a, requestId)).map(_ => {
+      Ok(
+        """{
+          |  "status": true
+          |}""".stripMargin).as("application/json")
+    }).recover {
+      case e: Exception => {
+        val err = e.getMessage.replace("\"", "").replace("\n", "")
+        BadRequest(
+          s"""{
+             |  "status": false,
+             |  "message": "$err"
+             |}""".stripMargin).as("application/json")
+      }
+    }
   }
 
   /**

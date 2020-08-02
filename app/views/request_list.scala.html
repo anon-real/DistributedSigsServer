@@ -2,16 +2,16 @@
 @import models.Request
 @(reqs: Seq[Request], team: Team)(implicit header: RequestHeader)
     @main("Proposals") {
-        @if(reqs.isEmpty) {
-            <div class="jumbotron jumbotron-fluid">
+    <div class="container d-flex justify-content-center ">
+        <p class="lead"><a href="@routes.AsyncController.teamList(team.name)">@team.name</a> Proposals</p>
+    </div>
+    @if(reqs.isEmpty) {
+        <div class="jumbotron jumbotron-fluid">
                 <div class="container d-flex justify-content-center ">
                     <p class="lead">No proposal yet for this team!</p>
                 </div>
             </div>
         } else {
-                <div class="container d-flex justify-content-center ">
-                    <p class="lead"><a href="@routes.AsyncController.teamList(team.name)">@team.name</a> Proposals</p>
-                </div>
             @for(req <- reqs) {
                 <div class="card text-center">
                     <div class="card-body">
