@@ -11,13 +11,13 @@ trait TransactionComponent { self: HasDatabaseConfigProvider[JdbcProfile] =>
   import profile.api._
 
   class TransactionTable(tag: Tag) extends Table[Transaction](tag, "TRANSACTION") {
-    def pk = column[String]("PK")
     def isPartial = column[Boolean]("IS_PARTIAL")
     def isConfirmed = column[Boolean]("IS_CONFIRMED")
     def isValid = column[Boolean]("IS_VALID")
     def requestId = column[Long]("REQUEST_ID")
+    def memberId = column[Long]("MEMBER_ID")
     def txBytes = column[Array[Byte]]("TX_BYTES")
-    def * = (requestId, isPartial, txBytes, isValid, isConfirmed, pk) <> (Transaction.tupled, Transaction.unapply)
+    def * = (requestId, isPartial, txBytes, isValid, isConfirmed, memberId) <> (Transaction.tupled, Transaction.unapply)
   }
 }
 

@@ -7,6 +7,7 @@ import play.api.mvc._
 import play.api.data._
 import models.Forms._
 import models.{Commitment, Member, RequestStatus, Team, Transaction}
+import play.api.libs.json.JsValue
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -39,13 +40,16 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
   }
 
   def createTeam = Action(parse.json).async { implicit request =>
-    val reqMembers = (request.body \\ "pks").head.as[List[String]]
+    val reqMembers = (request.body \\ "members").head.as[List[JsValue]]
     val name = (request.body \\ "name").head.as[String]
     val description = (request.body \\ "description").head.as[String]
     val address = (request.body \\ "address").head.as[String]
-    println(name)
     val res = teams.insert(Team(name, description, address)).map(id => {
-      reqMembers.foreach(pk => members.insert(Member(pk, id)))
+      reqMembers.foreach(mem => {
+        val nick = (mem \\ "nick").head.as[String]
+        val pk = (mem \\ "pk").head.as[String]
+        members.insert(Member(pk, nick, id))
+      })
     })
     res.map(_ => Ok(
       s"""{
@@ -86,41 +90,58 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
   def newCommitment(requestId: Long) = Action(parse.json).async { implicit request =>
     val body = request.body
     val a = (body \\ "a").head.as[String]
-    val pk = (body \\ "pk").head.as[String]
-    requests.byId(requestId).map(req => {
-      if (req.status.get == RequestStatus.pendingApproval) {
-        commitments.insert(Commitment(pk, a, requestId))
-        Ok(
-          """{
-            |  "status": true
-            |}""".stripMargin
-        ).as("application/json")
+    val memberId = (body \\ "memberId").head.as[Long]
+    val memberOk = requests.isMemberPartOf(requestId, memberId)
+    memberOk.map(isOk => {
+      if (isOk) {
+        val okRes = requests.byId(requestId).map(req => {
+          if (req.status.get == RequestStatus.pendingApproval) {
+            commitments.insert(Commitment(memberId, a, requestId)).recover {
+              case e: Throwable => e.printStackTrace()
+            }
+            Ok(
+              """{
+                |  "status": true
+                |}""".stripMargin
+            ).as("application/json")
+          } else {
+            BadRequest(
+              s"""{
+                 |  "status": false,
+                 |  "message": "request is already marked as ${req.status.get}"
+                 |}""".stripMargin
+            ).as("application/json")
+          }
+        }).recover {
+          case e: Exception =>
+            e.printStackTrace()
+            val err = e.getMessage.replace("\"", "").replace("\n", "")
+            BadRequest(
+              s"""{
+                 |  "status": false,
+                 |  "message": "$err"
+                 |}""".stripMargin
+            ).as("application/json")
+        }
+        okRes
       } else {
-        BadRequest(
-          s"""{
-             |  "status": false,
-             |  "message": "request is already marked as ${req.status.get}"
-             |}""".stripMargin
-        ).as("application/json")
+        Future {
+          BadRequest(
+            s"""{
+               |  "status": false,
+               |  "message": "You are not a member of this team!"
+               |}""".stripMargin
+          ).as("application/json")
+        }
       }
-    }).recover {
-      case e: Exception =>
-        val err = e.getMessage.replace("\"", "").replace("\n", "")
-        BadRequest(
-          s"""{
-             |  "status": false,
-             |  "message": "$err"
-             |}""".stripMargin
-        ).as("application/json")
-
-    }
+    }).flatten
   }
 
   def setTx(reqId: Long) = Action(parse.json).async { implicit request =>
     val isPartial: Boolean = (request.body \\ "isPartial").head.as[Boolean]
-    val pk: String = (request.body \\ "tx").head.as[String]
+    val memberId: Long = (request.body \\ "memberId").head.as[Long]
     val tx: String = (request.body \\ "tx").head.toString()
-    transactions.insert(Transaction(reqId, isPartial, tx.getBytes("utf-16"), isValid = false, isConfirmed = false, pk)).map(_ => {
+    transactions.insert(Transaction(reqId, isPartial, tx.getBytes("utf-16"), isValid = false, isConfirmed = false, memberId)).map(_ => {
       Ok(
         """{
           |  "status": true
@@ -138,16 +159,70 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
     }
   }
 
-  def test(reqId: Long) = Action(parse.json) { implicit request =>
-    val isPartial: Boolean = (request.body \\ "isPartial").head.as[Boolean]
-    val tx: String = (request.body \\ "tx").head.toString()
-    transactions.insert(Transaction(reqId, isPartial, tx.getBytes("utf-16"), false, false, "")).onComplete(res => {
-      println(res)
+  def getInfo(pk: String) = Action.async { implicit request =>
+    val memTeams = teams.getForAMember(pk)
+    val info = memTeams.map(res => {
+      val t = res.map(team => {
+        requests.teamProposals(team.id.get, Seq(RequestStatus.pendingApproval)).map(reqs => {
+          s"""{
+            |  "team": ${team.toJson},
+            |  "pendingNum": ${reqs.length}
+            |}""".stripMargin
+        })
+      })
+      Future.sequence(t)
     })
-    transactions.all().onComplete(res => {
-      res.get.foreach(tx => println(tx.toString()))
+    info.flatten.map(res => {
+      val info = res.mkString(",")
+      Ok(s"""
+            |[$info]
+            |""".stripMargin
+      ).as("application/json")
+
     })
-    Ok("ok")
+  }
+
+  def getProposals(teamId: Long) = Action.async { implicit request =>
+    val team = teams.byId(teamId)
+    val reqs = requests.teamProposals(teamId)
+    val mems = teams.getMembers(teamId)
+    val at = for {
+      f <- reqs
+      s <- mems
+    } yield (f, s)
+    val finalCmts = at.map(both => {
+      val res = both._1
+      val withCmts = res.map(req => {
+        commitments.getRequestCommitments(req.id.get).map(cmts => {
+          val cmtList = cmts.map(cmt => cmt.toJson(both._2.filter(_.id.get == cmt.memberId).head)).mkString(",")
+          req.toJson(cmtList)
+        })
+      })
+      Future.sequence(withCmts)
+    }).flatten
+    val aggFut = for {
+      f <- team
+      s <- finalCmts
+    } yield (f, s)
+
+    aggFut.map(res => {
+      val proposals = res._2.mkString(",")
+      Ok(s"""{
+            |  "team": ${res._1.toJson},
+            |  "proposals": [$proposals]
+            |}""".stripMargin
+      ).as("application/json")
+    })
+  }
+
+  def test(reqId: Long) = Action.async { implicit request =>
+    teams.getMembers(reqId).map(res => {
+      val lst = res.map(rs => rs.toJson).mkString(",")
+      Ok(s"""[
+            |$lst
+            |]""".stripMargin
+      ).as("application/json")
+    })
   }
 
   /**

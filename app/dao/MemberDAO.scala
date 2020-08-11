@@ -1,7 +1,7 @@
 package dao
 
 import javax.inject.{Inject, Singleton}
-import models.{Commitment, Member}
+import models.Member
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import slick.jdbc.JdbcProfile
 
@@ -11,9 +11,11 @@ trait MemberComponent { self: HasDatabaseConfigProvider[JdbcProfile] =>
   import profile.api._
 
   class MemberTable(tag: Tag) extends Table[Member](tag, "MEMBER") {
-    def pk = column[String]("PK")
+    def id = column[Long]("ID", O.PrimaryKey, O.AutoInc)
+    def public_key = column[String]("PUBLIC_KEY")
+    def nick_name = column[String]("NICK_NAME")
     def teamId = column[Long]("TEAM_ID")
-    def * = (pk, teamId) <> (Member.tupled, Member.unapply)
+    def * = (public_key, nick_name, teamId, id.?) <> (Member.tupled, Member.unapply)
   }
 }
 
@@ -28,7 +30,7 @@ class MemberDAO @Inject() (protected val dbConfigProvider: DatabaseConfigProvide
 
   def insert(member: Member): Future[Unit] = db.run(members += member).map(_ => ())
 
-  def byId(pk: String, teamId: Long): Future[Member] = db.run(members.filter(mem => mem.pk === pk && mem.teamId === teamId).result.head)
+  def byId(memberId: Long): Future[Member] = db.run(members.filter(mem => mem.id === memberId).result.head)
 
   def all(): Future[Seq[Member]] = db.run(members.result)
 }

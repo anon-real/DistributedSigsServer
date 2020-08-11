@@ -6,20 +6,28 @@ document.addEventListener('DOMContentLoaded', function () {
     $("#createTeamForm").submit(function (event) {
         event.preventDefault();
         try {
-            pks = JSON.parse($("#pks").val())
+            pks = JSON.parse($("#members").val())
         } catch (e) {
-            alert("Enter a valid list of publik keys " + e.message);
+            alert("Enter a valid list of members " + e.message);
             return
         }
         if (pks.length === 0) {
-            alert("public key list can not be empty!");
+            alert("member list can not be empty!");
             return
+        } else {
+            for (i = 0; i < pks.length; i++) {
+                if (!pks[i].hasOwnProperty('nick') || !pks[i].hasOwnProperty('pk')) {
+                    alert("enter a valid member list like the example.");
+                    return
+
+                }
+            }
         }
         data = {
             name: $("#name").val(),
             address: $("#address").val(),
             description: $("#description").val(),
-            pks: pks
+            members: pks
         };
         posting = $.ajax({
             url: $(this).attr('action'),

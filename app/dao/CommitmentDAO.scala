@@ -11,23 +11,36 @@ trait CommitmentComponent { self: HasDatabaseConfigProvider[JdbcProfile] =>
   import profile.api._
 
   class CommitmentTable(tag: Tag) extends Table[Commitment](tag, "COMMITMENT") {
-    def pk = column[String]("PK")
+    def memberId = column[Long]("MEMBER_ID")
     def a = column[String]("A")
     def requestId = column[Long]("REQUEST_ID")
-    def * = (pk, a, requestId) <> (Commitment.tupled, Commitment.unapply)
+    def * = (memberId, a, requestId) <> (Commitment.tupled, Commitment.unapply)
   }
 }
 
 @Singleton()
 class CommitmentDAO @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit executionContext: ExecutionContext)
-  extends CommitmentComponent
+  extends CommitmentComponent with MemberComponent
     with HasDatabaseConfigProvider[JdbcProfile] {
 
   import profile.api._
 
   val commitments = TableQuery[CommitmentTable]
+  val members = TableQuery[MemberTable]
 
-  def insert(commitment: Commitment): Future[Unit] = db.run(commitments += commitment).map(_ => ())
+  def getRequestCommitments(reqId: Long): Future[Seq[Commitment]] = db.run(commitments.filter(req => req.requestId === reqId).result)
+
+  def getRequestPks(reqId: Long): Future[Seq[String]] = {
+    val query = for {
+      c <- commitments
+      m <- members if m.id === c.memberId && c.requestId === reqId
+    } yield m.public_key
+    db.run(query.result)
+  }
+
+  def insert(commitment: Commitment): Future[Unit] = {
+    db.run(commitments += commitment).map(_ => ())
+  }
 
   def all(): Future[Seq[Commitment]] = db.run(commitments.result)
 }

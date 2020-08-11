@@ -10,10 +10,12 @@ CREATE TABLE Team (
 );
 
 CREATE TABLE Member (
-    pk VARCHAR(1000) NOT NULL,
+    id BIGINT(20) NOT NULL AUTO_INCREMENT,
+    nick_name VARCHAR(100) NOT NULL,
+    public_key VARCHAR(1000) NOT NULL,
     team_id BIGINT(20) NOT NULL,
     FOREIGN KEY (team_id) REFERENCES Team(id) ON DELETE CASCADE,
-    PRIMARY KEY (pk, team_id)
+    PRIMARY KEY (id)
 );
 
 CREATE TABLE Request (
@@ -30,28 +32,29 @@ CREATE TABLE Request (
 );
 
 CREATE TABLE Commitment (
-    pk VARCHAR(1000) NOT NULL,
+    member_id BIGINT(20) NOT NULL,
     a VARCHAR(1000) NOT NULL,
     request_id BIGINT(20) NOT NULL,
     time DATETIME NOT NULL DEFAULT(CURRENT_TIMESTAMP()),
     FOREIGN KEY (request_id) REFERENCES Request(id) ON DELETE CASCADE,
-    FOREIGN KEY (pk) REFERENCES Member(pk) ON DELETE CASCADE,
+    FOREIGN KEY (member_id) REFERENCES Member(id) ON DELETE CASCADE,
     PRIMARY KEY (a)
 );
 
 CREATE TABLE Transaction (
-    pk VARCHAR(1000) NOT NULL,
+    member_id BIGINT(20) NOT NULL,
     request_id BIGINT(20) NOT NULL,
     is_partial BIT NOT NULL DEFAULT(1),
     tx_bytes BLOB NOT NULL,
     is_valid BIT NOT NULL DEFAULT(0),
     is_confirmed BIT NOT NULL DEFAULT(0),
     FOREIGN KEY (request_id) REFERENCES Request(id) ON DELETE CASCADE,
-    FOREIGN KEY (pk) REFERENCES Member(pk) ON DELETE CASCADE,
-    PRIMARY KEY (request_id, pk)
+    FOREIGN KEY (member_id) REFERENCES Member(id) ON DELETE CASCADE,
+    PRIMARY KEY (request_id, member_id)
 );
 
 -- !Downs
+DROP TABLE TRANSACTION ;
 DROP TABLE COMMITMENT;
 DROP TABLE REQUEST;
 DROP TABLE MEMEBER;

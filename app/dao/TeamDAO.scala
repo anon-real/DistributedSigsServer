@@ -41,5 +41,13 @@ class TeamDAO @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)
 
   def getMembers(id: Long): Future[Seq[Member]] = db.run(members.filter(member => member.teamId === id).result)
 
+  def getForAMember(pk: String): Future[Seq[Team]] = {
+    val query = for {
+      t <- teams
+      m <- members if m.teamId === t.id && m.public_key === pk
+    } yield t
+    db.run(query.result)
+  }
+
   def search(par: String): Future[Seq[Team]] = db.run(teams.filter(team => team.name.toLowerCase like par.toLowerCase).result)
 }
