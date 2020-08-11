@@ -32,5 +32,7 @@ class MemberDAO @Inject() (protected val dbConfigProvider: DatabaseConfigProvide
 
   def byId(memberId: Long): Future[Member] = db.run(members.filter(mem => mem.id === memberId).result.head)
 
+  def byTeamAndPk(teamId: Long, pk: String): Future[Member] = db.run(members.filter(mem => mem.teamId === teamId && mem.public_key === pk).result.head)
+
   def all(): Future[Seq[Member]] = db.run(members.result)
 }

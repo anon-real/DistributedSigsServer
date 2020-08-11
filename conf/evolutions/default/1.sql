@@ -38,7 +38,7 @@ CREATE TABLE Commitment (
     time DATETIME NOT NULL DEFAULT(CURRENT_TIMESTAMP()),
     FOREIGN KEY (request_id) REFERENCES Request(id) ON DELETE CASCADE,
     FOREIGN KEY (member_id) REFERENCES Member(id) ON DELETE CASCADE,
-    PRIMARY KEY (a)
+    PRIMARY KEY (request_id, member_id)
 );
 
 CREATE TABLE Transaction (

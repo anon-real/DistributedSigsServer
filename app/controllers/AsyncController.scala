@@ -163,9 +163,17 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
     val memTeams = teams.getForAMember(pk)
     val info = memTeams.map(res => {
       val t = res.map(team => {
-        requests.teamProposals(team.id.get, Seq(RequestStatus.pendingApproval)).map(reqs => {
+        val props = requests.teamProposals(team.id.get, Seq(RequestStatus.pendingApproval))
+        val mem = members.byTeamAndPk(team.id.get, pk)
+        val at = for {
+          f <- props
+          s <- mem
+        } yield (f, s)
+        at.map(both => {
+          val reqs = both._1
           s"""{
             |  "team": ${team.toJson},
+            |  "memberId": ${both._2.id.get},
             |  "pendingNum": ${reqs.length}
             |}""".stripMargin
         })
@@ -182,7 +190,7 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
     })
   }
 
-  def getProposals(teamId: Long) = Action.async { implicit request =>
+  def getProposals(teamId: Long, pk: String) = Action.async { implicit request =>
     val team = teams.byId(teamId)
     val reqs = requests.teamProposals(teamId)
     val mems = teams.getMembers(teamId)
@@ -203,12 +211,14 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
     val aggFut = for {
       f <- team
       s <- finalCmts
-    } yield (f, s)
+      m <- mems
+    } yield (f, s, m)
 
     aggFut.map(res => {
       val proposals = res._2.mkString(",")
       Ok(s"""{
             |  "team": ${res._1.toJson},
+            |  "memberId": ${res._3.filter(_.pk == pk).head.id.get},
             |  "proposals": [$proposals]
             |}""".stripMargin
       ).as("application/json")

@@ -7,7 +7,7 @@ GET         /requstList/:teamId                      controllers.AsyncController
 POST        /request/:requestId/newCommitment        controllers.AsyncController.newCommitment(requestId: Long)
 POST        /setTx/:reqId                            controllers.AsyncController.setTx(reqId: Long)
 GET         /getTeams/:pk                            controllers.AsyncController.getInfo(pk: String)
-GET         /getProposals/:teamId                    controllers.AsyncController.getProposals(teamId: Long)
+GET         /getProposals/:teamId/:pk                controllers.AsyncController.getProposals(teamId: Long, pk: String)
 
 
 
