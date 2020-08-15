@@ -172,19 +172,20 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
         at.map(both => {
           val reqs = both._1
           s"""{
-            |  "team": ${team.toJson},
-            |  "memberId": ${both._2.id.get},
-            |  "pendingNum": ${reqs.length}
-            |}""".stripMargin
+             |  "team": ${team.toJson},
+             |  "memberId": ${both._2.id.get},
+             |  "pendingNum": ${reqs.length}
+             |}""".stripMargin
         })
       })
       Future.sequence(t)
     })
     info.flatten.map(res => {
       val info = res.mkString(",")
-      Ok(s"""
-            |[$info]
-            |""".stripMargin
+      Ok(
+        s"""
+           |[$info]
+           |""".stripMargin
       ).as("application/json")
 
     })
@@ -216,21 +217,58 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
 
     aggFut.map(res => {
       val proposals = res._2.mkString(",")
-      Ok(s"""{
-            |  "team": ${res._1.toJson},
-            |  "memberId": ${res._3.filter(_.pk == pk).head.id.get},
-            |  "proposals": [$proposals]
-            |}""".stripMargin
+      Ok(
+        s"""{
+           |  "team": ${res._1.toJson},
+           |  "memberId": ${res._3.filter(_.pk == pk).head.id.get},
+           |  "proposals": [$proposals]
+           |}""".stripMargin
       ).as("application/json")
     })
+  }
+
+  def proposalDecision(reqId: Long) = Action(parse.json).async { implicit request =>
+    val approved = (request.body \\ "decision").head.as[Boolean]
+    val res = requests.byId(reqId).map(proposal => {
+      if (proposal.status.get == RequestStatus.pendingApproval) {
+        val status = if (approved) RequestStatus.approved else RequestStatus.rejected
+        proposal.status = Some(status)
+        requests.updateById(proposal).map(_ => {
+          Ok("{}").as("application/json")
+
+        }).recover {
+          case e: Exception => BadRequest(
+            s"""{
+               |  "message": "${e.getMessage}"
+               |}""".stripMargin).as("application/json")
+        }
+      } else {
+        Future {
+          BadRequest(
+            s"""{
+               |  "message": "proposal is already in ${proposal.status.get} status!",
+               |  "success": false
+               |}""".stripMargin).as("application/json"
+          )
+        }
+      }
+    }).recover {
+      case e: Exception => Future{BadRequest(
+        s"""{
+           |  "message": "${e.getMessage}",
+           |  "success": false
+           |}""".stripMargin).as("application/json")}
+    }
+    res.flatten
   }
 
   def test(reqId: Long) = Action.async { implicit request =>
     teams.getMembers(reqId).map(res => {
       val lst = res.map(rs => rs.toJson).mkString(",")
-      Ok(s"""[
-            |$lst
-            |]""".stripMargin
+      Ok(
+        s"""[
+           |$lst
+           |]""".stripMargin
       ).as("application/json")
     })
   }

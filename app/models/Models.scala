@@ -43,8 +43,8 @@ case class Request(title: String, amount: Long, description: String, address: St
        |  "address": "$address",
        |  "teamId": $teamId,
        |  "status": "${status.get}",
-       |  "commitments": [$commitments],
-       |  "id": ${id.get}
+       |  "id": ${id.get},
+       |  "commitments": [$commitments]
        |}""".stripMargin
   }
 

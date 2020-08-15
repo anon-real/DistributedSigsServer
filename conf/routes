@@ -1,23 +1,24 @@
-GET         /                                        controllers.AsyncController.teamList(name: String ?= "")
+GET         /                                      controllers.AsyncController.teamList(name: String ?= "")
 +nocsrf
-POST        /createTeam                              controllers.AsyncController.createTeam
-GET         /createTeam                              controllers.AsyncController.createTeamFrom
-POST        /newRequest                              controllers.AsyncController.newRequest()
-GET         /requstList/:teamId                      controllers.AsyncController.proposalList(teamId: Long)
-POST        /request/:requestId/newCommitment        controllers.AsyncController.newCommitment(requestId: Long)
-POST        /setTx/:reqId                            controllers.AsyncController.setTx(reqId: Long)
-GET         /getTeams/:pk                            controllers.AsyncController.getInfo(pk: String)
-GET         /getProposals/:teamId/:pk                controllers.AsyncController.getProposals(teamId: Long, pk: String)
+POST        /team                                  controllers.AsyncController.createTeam
+GET         /team                                  controllers.AsyncController.createTeamFrom
+POST        /proposal                              controllers.AsyncController.newRequest()
+GET         /proposal/:teamId                      controllers.AsyncController.proposalList(teamId: Long)
+POST        /proposal/:requestId/commitment        controllers.AsyncController.newCommitment(requestId: Long)
+POST        /proposal/:requestId/decide            controllers.AsyncController.proposalDecision(requestId: Long)
+POST        /proposal/tx/:reqId                    controllers.AsyncController.setTx(reqId: Long)
+GET         /team/:pk                              controllers.AsyncController.getInfo(pk: String)
+GET         /proposal/:teamId/:pk                  controllers.AsyncController.getProposals(teamId: Long, pk: String)
 
 
 
 # An example controller showing how to use dependency injection
-GET         /count                                   controllers.CountController.count
+GET         /count                                 controllers.CountController.count
 # An example controller showing how to write asynchronous code
-GET         /message                                 controllers.AsyncController.message
+GET         /message                               controllers.AsyncController.message
 
 # Map static resources from the /public folder to the /assets URL path
-GET         /assets/*file                            controllers.Assets.versioned(path="/public", file: Asset)
+GET         /assets/*file                          controllers.Assets.versioned(path="/public", file: Asset)
 
 
-GET        /test/:reqId                             controllers.AsyncController.test(reqId: Long)
+GET         /test/:reqId                           controllers.AsyncController.test(reqId: Long)

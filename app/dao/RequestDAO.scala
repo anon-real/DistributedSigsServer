@@ -35,6 +35,8 @@ class RequestDAO @Inject() (protected val dbConfigProvider: DatabaseConfigProvid
 
   def byId(id: Long): Future[Request] = db.run(requests.filter(req => req.id === id).result.head)
 
+  def updateById(prop: Request): Future[Unit] = db.run(requests.filter(_.id === prop.id).update(prop)).map(_ => ())
+
   def isMemberPartOf(reqId: Long, memberId: Long): Future[Boolean] = {
     val f = db.run(requests.filter(req => req.id === reqId).result.head)
     val s = db.run(members.filter(mem => mem.id === memberId).result.head)
