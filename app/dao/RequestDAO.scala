@@ -13,7 +13,7 @@ trait RequestComponent { self: HasDatabaseConfigProvider[JdbcProfile] =>
   class RequestTable(tag: Tag) extends Table[Request](tag, "REQUEST") {
     def id = column[Long]("ID", O.PrimaryKey, O.AutoInc)
     def title = column[String]("TITLE")
-    def amount = column[Long]("AMOUNT")
+    def amount = column[Double]("AMOUNT")
     def description = column[String]("DESCRIPTION")
     def address = column[String]("ADDRESS")
     def teamId = column[Long]("TEAM_ID")

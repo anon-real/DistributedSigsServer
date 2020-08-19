@@ -5,9 +5,15 @@ GET         /team                                  controllers.AsyncController.c
 POST        /proposal                              controllers.AsyncController.newRequest()
 GET         /proposal/:teamId                      controllers.AsyncController.proposalList(teamId: Long)
 POST        /proposal/:requestId/commitment        controllers.AsyncController.newCommitment(requestId: Long)
+POST        /proposal/:requestId/proof             controllers.AsyncController.newProof(requestId: Long)
 POST        /proposal/:requestId/decide            controllers.AsyncController.proposalDecision(requestId: Long)
 POST        /proposal/tx/:reqId                    controllers.AsyncController.setTx(reqId: Long)
+GET         /proposal/tx/unsigned/:reqId           controllers.AsyncController.getUnsignedTx(reqId: Long)
 GET         /team/:pk                              controllers.AsyncController.getInfo(pk: String)
+GET         /team/:teamId/members                  controllers.AsyncController.getMembers(teamId: Long)
+GET         /proposal/:reqId/proofs                controllers.AsyncController.getProofs(reqId: Long)
+GET         /proposal/:reqId/commitments           controllers.AsyncController.getCommitments(reqId: Long)
+GET         /proposal/approved/:teamId             controllers.AsyncController.getApprovedProposals(teamId: Long)
 GET         /proposal/:teamId/:pk                  controllers.AsyncController.getProposals(teamId: Long, pk: String)
 
 

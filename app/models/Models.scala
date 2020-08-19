@@ -33,7 +33,7 @@ case class Member(pk: String, nickName: String, teamId: Long, id: Option[Long] =
 
 }
 
-case class Request(title: String, amount: Long, description: String, address: String, teamId: Long, var status: Option[String] = Some(RequestStatus.pendingApproval), id: Option[Long] = None) {
+case class Request(title: String, amount: Double, description: String, address: String, teamId: Long, var status: Option[String] = Some(RequestStatus.pendingApproval), id: Option[Long] = None) {
   def toJson(commitments: String = ""): String = {
     val desc = description.replaceAll("\r\n", "\\\\n")
     s"""{
@@ -70,6 +70,24 @@ case class Commitment(memberId: Long, a: String, reqId: Long) {
   }
 }
 
-case class Transaction(reqId: Long, isPartial: Boolean, bytes: Array[Byte], isValid: Boolean, isConfirmed: Boolean, memberId: Long) {
-    override def toString: String = new String(bytes, StandardCharsets.UTF_16)
+case class Proof(memberId: Long, reqId: Long, proof: String, simulated: Boolean) {
+  def toJson: String = {
+    s"""{
+       |  "memberId": $memberId,
+       |  "requestId": $reqId,
+       |  "proof": $proof,
+       |  "simulated": $simulated
+       |}""".stripMargin
+  }
+}
+
+case class Transaction(reqId: Long, isUnsigned: Boolean, bytes: Array[Byte], isValid: Boolean, isConfirmed: Boolean) {
+  override def toString: String = new String(bytes, StandardCharsets.UTF_16)
+
+  def toJson : String = {
+    s"""{
+      |  "tx": $toString,
+      |  "requestId": $reqId
+      |}""".stripMargin
+  }
 }

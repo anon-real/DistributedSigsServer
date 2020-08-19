@@ -15,6 +15,7 @@ CREATE TABLE Member (
     public_key VARCHAR(1000) NOT NULL,
     team_id BIGINT(20) NOT NULL,
     FOREIGN KEY (team_id) REFERENCES Team(id) ON DELETE CASCADE,
+    UNIQUE (team_id, public_key),
     PRIMARY KEY (id)
 );
 
@@ -22,7 +23,7 @@ CREATE TABLE Request (
     id BIGINT(20) NOT NULL AUTO_INCREMENT,
     title VARCHAR(1000) NOT NULL,
     status VARCHAR(100) NOT NULL,
-    amount BIGINT NOT NULL,
+    amount DOUBLE NOT NULL,
     description VARCHAR(2000) NOT NULL,
     address VARCHAR(4000) NOT NULL,
     team_id BIGINT(20) NOT NULL,
@@ -41,16 +42,24 @@ CREATE TABLE Commitment (
     PRIMARY KEY (request_id, member_id)
 );
 
-CREATE TABLE Transaction (
+CREATE TABLE Proof (
     member_id BIGINT(20) NOT NULL,
     request_id BIGINT(20) NOT NULL,
-    is_partial BIT NOT NULL DEFAULT(1),
+    proof VARCHAR(10000) NOT NULL,
+    contains_simulation BIT NOT NULL DEFAULT(0),
+    FOREIGN KEY (request_id) REFERENCES Request(id) ON DELETE CASCADE,
+    FOREIGN KEY (member_id) REFERENCES Member(id) ON DELETE CASCADE,
+    PRIMARY KEY (request_id, member_id)
+);
+
+CREATE TABLE Transaction (
+    request_id BIGINT(20) NOT NULL,
+    is_unsigned BIT NOT NULL DEFAULT(1),
     tx_bytes BLOB NOT NULL,
     is_valid BIT NOT NULL DEFAULT(0),
     is_confirmed BIT NOT NULL DEFAULT(0),
     FOREIGN KEY (request_id) REFERENCES Request(id) ON DELETE CASCADE,
-    FOREIGN KEY (member_id) REFERENCES Member(id) ON DELETE CASCADE,
-    PRIMARY KEY (request_id, member_id)
+    PRIMARY KEY (request_id, is_unsigned)
 );
 
 -- !Downs

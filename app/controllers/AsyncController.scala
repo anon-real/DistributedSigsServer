@@ -1,17 +1,15 @@
 package controllers
 
-import javax.inject._
 import akka.actor.ActorSystem
-import dao.{CommitmentDAO, MemberDAO, RequestDAO, TeamDAO, TransactionDAO}
-import play.api.mvc._
-import play.api.data._
+import dao._
+import javax.inject._
 import models.Forms._
-import models.{Commitment, Member, RequestStatus, Team, Transaction}
+import models._
 import play.api.libs.json.JsValue
+import play.api.mvc._
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.{Failure, Success}
 
 /**
  * This controller creates an `Action` that demonstrates how to write
@@ -30,8 +28,10 @@ import scala.util.{Failure, Success}
  */
 @Singleton
 class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitments: CommitmentDAO, members: MemberDAO,
-                                transactions: TransactionDAO,
+                                transactions: TransactionDAO, proofs: ProofDAO,
                                 cc: ControllerComponents, actorSystem: ActorSystem)(implicit exec: ExecutionContext) extends AbstractController(cc) {
+
+  // TODO needs authentication! proof of knowledge of pk, also pk must be relevant to the request!
 
   def createTeamFrom = Action.async { implicit request =>
     getFutureMessage(0.second).map { msg =>
@@ -101,13 +101,13 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
             }
             Ok(
               """{
-                |  "status": true
+                |  "success": true
                 |}""".stripMargin
             ).as("application/json")
           } else {
             BadRequest(
               s"""{
-                 |  "status": false,
+                 |  "success": false,
                  |  "message": "request is already marked as ${req.status.get}"
                  |}""".stripMargin
             ).as("application/json")
@@ -118,7 +118,7 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
             val err = e.getMessage.replace("\"", "").replace("\n", "")
             BadRequest(
               s"""{
-                 |  "status": false,
+                 |  "success": false,
                  |  "message": "$err"
                  |}""".stripMargin
             ).as("application/json")
@@ -128,7 +128,64 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
         Future {
           BadRequest(
             s"""{
-               |  "status": false,
+               |  "success": false,
+               |  "message": "You are not a member of this team!"
+               |}""".stripMargin
+          ).as("application/json")
+        }
+      }
+    }).flatten
+  }
+
+  def newProof(requestId: Long) = Action(parse.json).async { implicit request =>
+    val body = request.body
+    val proof = (body \ "proof").get.toString()
+    val simulated = (body \ "simulated").as[Boolean]
+    val memberId = (body \ "memberId").as[Long]
+    val alreadySim = proofs.requestSimulated(requestId)
+    val memberOk = requests.isMemberPartOf(requestId, memberId)
+    val at = for {
+      f <- memberOk
+      s <- alreadySim
+    } yield (f, s)
+    at.map(both => {
+      val isOk = both._1 && !(both._2 && simulated)
+      if (isOk) {
+        val okRes = requests.byId(requestId).map(req => {
+          if (req.status.get == RequestStatus.approved) {
+            proofs.insert(Proof(memberId, requestId, proof, simulated)).recover {
+              case e: Throwable => e.printStackTrace()
+            }
+            Ok(
+              """{
+                |  "success": true
+                |}""".stripMargin
+            ).as("application/json")
+          } else {
+            BadRequest(
+              s"""{
+                 |  "success": false,
+                 |  "message": "request is marked as ${req.status.get}"
+                 |}""".stripMargin
+            ).as("application/json")
+          }
+        }).recover {
+          case e: Exception =>
+            e.printStackTrace()
+            val err = e.getMessage.replace("\"", "").replace("\n", "")
+            BadRequest(
+              s"""{
+                 |  "success": false,
+                 |  "message": "$err"
+                 |}""".stripMargin
+            ).as("application/json")
+        }
+        okRes
+      } else {
+        Future {
+          BadRequest(
+            s"""{
+               |  "success": false,
                |  "message": "You are not a member of this team!"
                |}""".stripMargin
           ).as("application/json")
@@ -138,13 +195,12 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
   }
 
   def setTx(reqId: Long) = Action(parse.json).async { implicit request =>
-    val isPartial: Boolean = (request.body \\ "isPartial").head.as[Boolean]
-    val memberId: Long = (request.body \\ "memberId").head.as[Long]
-    val tx: String = (request.body \\ "tx").head.toString()
-    transactions.insert(Transaction(reqId, isPartial, tx.getBytes("utf-16"), isValid = false, isConfirmed = false, memberId)).map(_ => {
+    val isUnsigned: Boolean = (request.body \ "isUnsigned").as[Boolean]
+    val tx: String = (request.body \ "tx").get.toString()
+    transactions.insert(Transaction(reqId, isUnsigned, tx.getBytes("utf-16"), isValid = false, isConfirmed = false)).map(_ => {
       Ok(
         """{
-          |  "status": true
+          |  "success": true
           |}""".stripMargin
       ).as("application/json")
     }).recover {
@@ -152,7 +208,7 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
         val err = e.getMessage.replace("\"", "").replace("\n", "")
         BadRequest(
           s"""{
-             |  "status": false,
+             |  "success": false,
              |  "message": "$err"
              |}""".stripMargin
         ).as("application/json")
@@ -225,6 +281,101 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
            |}""".stripMargin
       ).as("application/json")
     })
+  }
+
+  def getUnsignedTx(reqId: Long) = Action.async { implicit request =>
+    transactions.byId(reqId, isUnsigned = true).map(tx => {
+      Ok(tx.toJson).as("application/json")
+    }).recover {
+      case e: Exception => NotFound(
+        s"""{
+           |  "message": "unsigned transaction for this proposal is not set yet.",
+           |  "success": false
+           |}""".stripMargin).as("application/json")
+    }
+  }
+
+  def getMembers(teamId: Long) = Action.async { implicit request =>
+    teams.getMembers(teamId).map(members => {
+      Ok(s"""
+          |[${members.map(_.toJson).mkString(",")}]
+          |""".stripMargin)
+    }).recover {
+      case e: Exception =>
+        e.printStackTrace()
+        val err = e.getMessage.replace("\"", "").replace("\n", "")
+        BadRequest(
+          s"""{
+             |  "success": false,
+             |  "message": "$err"
+             |}""".stripMargin
+        ).as("application/json")
+    }
+  }
+
+  def getCommitments(reqId: Long) = Action.async { implicit request =>
+    val prop = requests.byId(reqId)
+    val cmnts = commitments.getRequestCommitments(reqId)
+    val aggFut = for {
+      f <- prop
+      s <- cmnts
+    } yield (f, s)
+    val res = aggFut.map(both => {
+      val reqs = both._2
+      teams.getMembers(both._1.teamId).map(members => {
+        Ok(s"""
+              |[${reqs.map(cmt => cmt.toJson(members.filter(_.id.get == cmt.memberId).head)).mkString(",")}]
+              |""".stripMargin)
+      })
+    }).recover {
+      case e: Exception =>
+        e.printStackTrace()
+        val err = e.getMessage.replace("\"", "").replace("\n", "")
+        Future{BadRequest(
+          s"""{
+             |  "success": false,
+             |  "message": "$err"
+             |}""".stripMargin
+        ).as("application/json")}
+    }
+    res.flatten
+  }
+
+  def getProofs(reqId: Long) = Action.async { implicit request =>
+    proofs.getRequestProofs(reqId).map(proofs => {
+      Ok(s"""
+            |[${proofs.map(_.toJson).mkString(",")}]
+            |""".stripMargin).as("application/json")
+
+  }).recover {
+      case e: Exception =>
+        e.printStackTrace()
+        val err = e.getMessage.replace("\"", "").replace("\n", "")
+        BadRequest(
+          s"""{
+             |  "success": false,
+             |  "message": "$err"
+             |}""".stripMargin
+        ).as("application/json")
+    }
+  }
+
+  def getApprovedProposals(teamId: Long) = Action.async { implicit request =>
+    requests.teamProposals(teamId, Seq(RequestStatus.approved)).map(props => {
+      Ok(s"""
+            |[${props.map(_.toJson()).mkString(",")}]
+            |""".stripMargin)
+    }).recover {
+      case e: Exception =>
+        e.printStackTrace()
+        val err = e.getMessage.replace("\"", "").replace("\n", "")
+        BadRequest(
+          s"""{
+             |  "success": false,
+             |  "message": "$err"
+             |}""".stripMargin
+        ).as("application/json")
+    }
   }
 
   def proposalDecision(reqId: Long) = Action(parse.json).async { implicit request =>
