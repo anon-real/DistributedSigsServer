@@ -7,6 +7,7 @@ GET         /proposal/:teamId                      controllers.AsyncController.p
 POST        /proposal/:requestId/commitment        controllers.AsyncController.newCommitment(requestId: Long)
 POST        /proposal/:requestId/proof             controllers.AsyncController.newProof(requestId: Long)
 POST        /proposal/:requestId/decide            controllers.AsyncController.proposalDecision(requestId: Long)
+POST        /proposal/:requestId/paid              controllers.AsyncController.proposalSetPaid(requestId: Long)
 POST        /proposal/tx/:reqId                    controllers.AsyncController.setTx(reqId: Long)
 GET         /proposal/tx/unsigned/:reqId           controllers.AsyncController.getUnsignedTx(reqId: Long)
 GET         /team/:pk                              controllers.AsyncController.getInfo(pk: String)

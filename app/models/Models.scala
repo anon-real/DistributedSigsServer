@@ -33,7 +33,7 @@ case class Member(pk: String, nickName: String, teamId: Long, id: Option[Long] =
 
 }
 
-case class Request(title: String, amount: Double, description: String, address: String, teamId: Long, var status: Option[String] = Some(RequestStatus.pendingApproval), id: Option[Long] = None) {
+case class Request(title: String, amount: Double, description: String, address: String, teamId: Long, var txId: Option[String], var status: Option[String] = Some(RequestStatus.pendingApproval), id: Option[Long] = None) {
   def toJson(commitments: String = ""): String = {
     val desc = description.replaceAll("\r\n", "\\\\n")
     s"""{
@@ -81,7 +81,7 @@ case class Proof(memberId: Long, reqId: Long, proof: String, simulated: Boolean)
   }
 }
 
-case class Transaction(reqId: Long, isUnsigned: Boolean, bytes: Array[Byte], isValid: Boolean, isConfirmed: Boolean) {
+case class Transaction(reqId: Long, bytes: Array[Byte]) {
   override def toString: String = new String(bytes, StandardCharsets.UTF_16)
 
   def toJson : String = {

@@ -13,12 +13,13 @@ trait RequestComponent { self: HasDatabaseConfigProvider[JdbcProfile] =>
   class RequestTable(tag: Tag) extends Table[Request](tag, "REQUEST") {
     def id = column[Long]("ID", O.PrimaryKey, O.AutoInc)
     def title = column[String]("TITLE")
+    def confirmedTxId = column[String]("CONFIRMED_TX_ID")
     def amount = column[Double]("AMOUNT")
     def description = column[String]("DESCRIPTION")
     def address = column[String]("ADDRESS")
     def teamId = column[Long]("TEAM_ID")
     def status = column[String]("STATUS")
-    def * = (title, amount, description, address, teamId, status.?, id.?) <> (Request.tupled, Request.unapply)
+    def * = (title, amount, description, address, teamId, confirmedTxId.?, status.?, id.?) <> (Request.tupled, Request.unapply)
   }
 }
 

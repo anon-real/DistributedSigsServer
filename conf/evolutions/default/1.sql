@@ -23,6 +23,7 @@ CREATE TABLE Request (
     id BIGINT(20) NOT NULL AUTO_INCREMENT,
     title VARCHAR(1000) NOT NULL,
     status VARCHAR(100) NOT NULL,
+    confirmed_tx_id VARCHAR(300) DEFAULT NULL,
     amount DOUBLE NOT NULL,
     description VARCHAR(2000) NOT NULL,
     address VARCHAR(4000) NOT NULL,
@@ -52,18 +53,15 @@ CREATE TABLE Proof (
     PRIMARY KEY (request_id, member_id)
 );
 
-CREATE TABLE Transaction (
+CREATE TABLE UnsignedTransaction (
     request_id BIGINT(20) NOT NULL,
-    is_unsigned BIT NOT NULL DEFAULT(1),
     tx_bytes BLOB NOT NULL,
-    is_valid BIT NOT NULL DEFAULT(0),
-    is_confirmed BIT NOT NULL DEFAULT(0),
     FOREIGN KEY (request_id) REFERENCES Request(id) ON DELETE CASCADE,
-    PRIMARY KEY (request_id, is_unsigned)
+    PRIMARY KEY (request_id)
 );
 
 -- !Downs
-DROP TABLE TRANSACTION ;
+DROP TABLE UnsignedTransaction ;
 DROP TABLE COMMITMENT;
 DROP TABLE REQUEST;
 DROP TABLE MEMEBER;

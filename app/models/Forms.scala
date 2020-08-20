@@ -22,6 +22,7 @@ object Forms {
       "description"  -> text,
       "address" -> text,
       "team_id" -> longNumber,
+      "confirmed_tx_id" -> optional(text),
       "status" -> optional(text),
       "id" -> optional(longNumber)
     )(Request.apply)(Request.unapply)

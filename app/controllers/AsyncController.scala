@@ -195,9 +195,8 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
   }
 
   def setTx(reqId: Long) = Action(parse.json).async { implicit request =>
-    val isUnsigned: Boolean = (request.body \ "isUnsigned").as[Boolean]
     val tx: String = (request.body \ "tx").get.toString()
-    transactions.insert(Transaction(reqId, isUnsigned, tx.getBytes("utf-16"), isValid = false, isConfirmed = false)).map(_ => {
+    transactions.insert(Transaction(reqId, tx.getBytes("utf-16"))).map(_ => {
       Ok(
         """{
           |  "success": true
@@ -284,7 +283,7 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
   }
 
   def getUnsignedTx(reqId: Long) = Action.async { implicit request =>
-    transactions.byId(reqId, isUnsigned = true).map(tx => {
+    transactions.byId(reqId).map(tx => {
       Ok(tx.toJson).as("application/json")
     }).recover {
       case e: Exception => NotFound(
@@ -398,6 +397,41 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
           BadRequest(
             s"""{
                |  "message": "proposal is already in ${proposal.status.get} status!",
+               |  "success": false
+               |}""".stripMargin).as("application/json"
+          )
+        }
+      }
+    }).recover {
+      case e: Exception => Future{BadRequest(
+        s"""{
+           |  "message": "${e.getMessage}",
+           |  "success": false
+           |}""".stripMargin).as("application/json")}
+    }
+    res.flatten
+  }
+
+  def proposalSetPaid(requestId: Long) = Action(parse.json).async { implicit request =>
+    val txId = (request.body \\ "txId").head.as[String]
+    val res = requests.byId(requestId).map(proposal => {
+      if (proposal.status.get == RequestStatus.approved) {
+        proposal.status = Some(RequestStatus.paid)
+        proposal.txId = Some(txId)
+        requests.updateById(proposal).map(_ => {
+          Ok("{}").as("application/json")
+
+        }).recover {
+          case e: Exception => BadRequest(
+            s"""{
+               |  "message": "${e.getMessage}"
+               |}""".stripMargin).as("application/json")
+        }
+      } else {
+        Future {
+          BadRequest(
+            s"""{
+               |  "message": "proposal is in ${proposal.status.get} status!",
                |  "success": false
                |}""".stripMargin).as("application/json"
           )
