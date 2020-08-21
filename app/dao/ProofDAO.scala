@@ -28,10 +28,22 @@ class ProofDAO @Inject() (protected val dbConfigProvider: DatabaseConfigProvider
 
   val proofs = TableQuery[ProofTable]
 
+  /**
+   * @param reqId proposal id
+   * @return list of proofs of a proposal
+   */
   def getRequestProofs(reqId: Long): Future[Seq[Proof]] = db.run(proofs.filter(req => req.requestId === reqId).result)
 
+  /**
+   * @param reqId proposal id
+   * @return whether the proposal is already simulated or not
+   */
   def requestSimulated(reqId: Long): Future[Boolean] = db.run(proofs.filter(req => req.requestId === reqId && req.simulated === true).exists.result)
 
+  /**
+   * inserts a proof into db
+   * @param proof proof
+   */
   def insert(proof: Proof): Future[Unit] = {
     db.run(proofs += proof).map(_ => ())
   }

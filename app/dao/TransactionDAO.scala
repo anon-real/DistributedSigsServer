@@ -26,8 +26,16 @@ class TransactionDAO @Inject() (protected val dbConfigProvider: DatabaseConfigPr
 
   val transactions = TableQuery[TransactionTable]
 
+  /**
+   * inserts a transaction into db
+   * @param transaction transaction
+   */
   def insert(transaction: Transaction): Future[Unit] = db.run(transactions += transaction).map(_ => ())
 
+  /**
+   * @param reqId proposal id
+   * @return the transaction associated with the proposal if set
+   */
   def byId(reqId: Long): Future[Transaction] = db.run(transactions.filter(tx => tx.requestId === reqId).result.head)
 
   def all(): Future[Seq[Transaction]] = db.run(transactions.result)

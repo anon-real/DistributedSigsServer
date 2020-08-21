@@ -11,21 +11,6 @@ import play.api.mvc._
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
-/**
- * This controller creates an `Action` that demonstrates how to write
- * simple asynchronous code in a controller. It uses a timer to
- * asynchronously delay sending a response for 1 second.
- *
- * @param cc          standard controller components
- * @param actorSystem We need the `ActorSystem`'s `Scheduler` to
- *                    run code after a delay.
- * @param exec        We need an `ExecutionContext` to execute our
- *                    asynchronous code.  When rendering content, you should use Play's
- *                    default execution context, which is dependency injected.  If you are
- *                    using blocking operations, such as database or network access, then you should
- *                    use a different custom execution context that has a thread pool configured for
- *                    a blocking API.
- */
 @Singleton
 class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitments: CommitmentDAO, members: MemberDAO,
                                 transactions: TransactionDAO, proofs: ProofDAO,
@@ -33,12 +18,16 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
 
   // TODO needs authentication! proof of knowledge of pk, also pk must be relevant to the request!
 
-  def createTeamFrom = Action.async { implicit request =>
-    getFutureMessage(0.second).map { msg =>
-      Ok(views.html.create_team())
-    }
+  /**
+   * GET endpoint for team form
+   */
+  def createTeamFrom = Action { implicit request =>
+    Ok(views.html.create_team())
   }
 
+  /**
+   * POST endpoint to create team
+   */
   def createTeam = Action(parse.json).async { implicit request =>
     val reqMembers = (request.body \\ "members").head.as[List[JsValue]]
     val name = (request.body \\ "name").head.as[String]
@@ -63,6 +52,11 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
     }
   }
 
+  /**
+   * GET endpoint to get teams containing 'name' in their name field
+   *
+   * @param name team name
+   */
   def teamList(name: String) = Action.async { implicit request =>
     if (name.isBlank)
       teams.all().map(teams => Ok(views.html.team_list(teams)))
@@ -70,6 +64,9 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
       teams.search("%" + name + "%").map(teams => Ok(views.html.team_list(teams)))
   }
 
+  /**
+   * POST endpoint to create a new proposal
+   */
   def newRequest() = Action(parse.form(requestForm)).async { implicit request =>
     request.body.status = Some(RequestStatus.pendingApproval)
     requests.insert(request.body).map(_ => {
@@ -77,6 +74,11 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
     })
   }
 
+  /**
+   * GET endpoint to get the proposal html page for a team
+   *
+   * @param teamId team id
+   */
   def proposalList(teamId: Long) = Action.async { implicit request =>
     val team = teams.byId(teamId)
     val reqs = requests.teamProposals(teamId)
@@ -87,6 +89,11 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
     aggFut.map(res => Ok(views.html.request_list(res._2, res._1)))
   }
 
+  /**
+   * POST endpoint to add a commitment for a proposal
+   *
+   * @param requestId proposal id
+   */
   def newCommitment(requestId: Long) = Action(parse.json).async { implicit request =>
     val body = request.body
     val a = (body \\ "a").head.as[String]
@@ -137,6 +144,11 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
     }).flatten
   }
 
+  /**
+   * POST endpoint to add a partial proof (or simulation) for a proposal
+   *
+   * @param requestId proposal id
+   */
   def newProof(requestId: Long) = Action(parse.json).async { implicit request =>
     val body = request.body
     val proof = (body \ "proof").get.toString()
@@ -194,6 +206,11 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
     }).flatten
   }
 
+  /**
+   * POST endpoint to set unsigned transaction for a proposal
+   *
+   * @param reqId proposal id
+   */
   def setTx(reqId: Long) = Action(parse.json).async { implicit request =>
     val tx: String = (request.body \ "tx").get.toString()
     transactions.insert(Transaction(reqId, tx.getBytes("utf-16"))).map(_ => {
@@ -214,6 +231,11 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
     }
   }
 
+  /**
+   * GET endpoint for getting info about a pk (teams, pending for each team, ...)
+   *
+   * @param pk public key of the member
+   */
   def getInfo(pk: String) = Action.async { implicit request =>
     val memTeams = teams.getForAMember(pk)
     val info = memTeams.map(res => {
@@ -246,6 +268,12 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
     })
   }
 
+  /**
+   * GET endpoint for getting list of proposal of a team as json
+   *
+   * @param teamId team id
+   * @param pk     public key
+   */
   def getProposals(teamId: Long, pk: String) = Action.async { implicit request =>
     val team = teams.byId(teamId)
     val reqs = requests.teamProposals(teamId)
@@ -282,6 +310,11 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
     })
   }
 
+  /**
+   * GET endpoint for getting unsigned transaction for a proposal if set as json
+   *
+   * @param reqId proposal id
+   */
   def getUnsignedTx(reqId: Long) = Action.async { implicit request =>
     transactions.byId(reqId).map(tx => {
       Ok(tx.toJson).as("application/json")
@@ -294,11 +327,17 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
     }
   }
 
+  /**
+   * GET endpoint for getting lis of members of a team as json
+   *
+   * @param teamId team id
+   */
   def getMembers(teamId: Long) = Action.async { implicit request =>
     teams.getMembers(teamId).map(members => {
-      Ok(s"""
-          |[${members.map(_.toJson).mkString(",")}]
-          |""".stripMargin)
+      Ok(
+        s"""
+           |[${members.map(_.toJson).mkString(",")}]
+           |""".stripMargin)
     }).recover {
       case e: Exception =>
         e.printStackTrace()
@@ -312,6 +351,11 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
     }
   }
 
+  /**
+   * GET endpoint for getting commitments of a proposal as json
+   *
+   * @param reqId proposal id
+   */
   def getCommitments(reqId: Long) = Action.async { implicit request =>
     val prop = requests.byId(reqId)
     val cmnts = commitments.getRequestCommitments(reqId)
@@ -322,48 +366,39 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
     val res = aggFut.map(both => {
       val reqs = both._2
       teams.getMembers(both._1.teamId).map(members => {
-        Ok(s"""
-              |[${reqs.map(cmt => cmt.toJson(members.filter(_.id.get == cmt.memberId).head)).mkString(",")}]
-              |""".stripMargin)
+        Ok(
+          s"""
+             |[${reqs.map(cmt => cmt.toJson(members.filter(_.id.get == cmt.memberId).head)).mkString(",")}]
+             |""".stripMargin)
       })
     }).recover {
       case e: Exception =>
         e.printStackTrace()
         val err = e.getMessage.replace("\"", "").replace("\n", "")
-        Future{BadRequest(
-          s"""{
-             |  "success": false,
-             |  "message": "$err"
-             |}""".stripMargin
-        ).as("application/json")}
+        Future {
+          BadRequest(
+            s"""{
+               |  "success": false,
+               |  "message": "$err"
+               |}""".stripMargin
+          ).as("application/json")
+        }
     }
     res.flatten
   }
 
+  /**
+   * GET endpoint for getting proofs of a proposal as json
+   *
+   * @param reqId proposal id
+   */
   def getProofs(reqId: Long) = Action.async { implicit request =>
     proofs.getRequestProofs(reqId).map(proofs => {
-      Ok(s"""
-            |[${proofs.map(_.toJson).mkString(",")}]
-            |""".stripMargin).as("application/json")
+      Ok(
+        s"""
+           |[${proofs.map(_.toJson).mkString(",")}]
+           |""".stripMargin).as("application/json")
 
-  }).recover {
-      case e: Exception =>
-        e.printStackTrace()
-        val err = e.getMessage.replace("\"", "").replace("\n", "")
-        BadRequest(
-          s"""{
-             |  "success": false,
-             |  "message": "$err"
-             |}""".stripMargin
-        ).as("application/json")
-    }
-  }
-
-  def getApprovedProposals(teamId: Long) = Action.async { implicit request =>
-    requests.teamProposals(teamId, Seq(RequestStatus.approved)).map(props => {
-      Ok(s"""
-            |[${props.map(_.toJson()).mkString(",")}]
-            |""".stripMargin)
     }).recover {
       case e: Exception =>
         e.printStackTrace()
@@ -377,6 +412,36 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
     }
   }
 
+  /**
+   * GET endpoint for getting approved proposals of a team as json
+   *
+   * @param teamId team id
+   */
+  def getApprovedProposals(teamId: Long) = Action.async { implicit request =>
+    requests.teamProposals(teamId, Seq(RequestStatus.approved)).map(props => {
+      Ok(
+        s"""
+           |[${props.map(_.toJson()).mkString(",")}]
+           |""".stripMargin)
+    }).recover {
+      case e: Exception =>
+        e.printStackTrace()
+        val err = e.getMessage.replace("\"", "").replace("\n", "")
+        BadRequest(
+          s"""{
+             |  "success": false,
+             |  "message": "$err"
+             |}""".stripMargin
+        ).as("application/json")
+    }
+  }
+
+  /**
+   * POST endpoint to make the final decision about a proposal
+   * call this if enough approvals/rejections has been collected to make the decision
+   *
+   * @param reqId proposal id
+   */
   def proposalDecision(reqId: Long) = Action(parse.json).async { implicit request =>
     val approved = (request.body \\ "decision").head.as[Boolean]
     val res = requests.byId(reqId).map(proposal => {
@@ -403,15 +468,21 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
         }
       }
     }).recover {
-      case e: Exception => Future{BadRequest(
-        s"""{
-           |  "message": "${e.getMessage}",
-           |  "success": false
-           |}""".stripMargin).as("application/json")}
+      case e: Exception => Future {
+        BadRequest(
+          s"""{
+             |  "message": "${e.getMessage}",
+             |  "success": false
+             |}""".stripMargin).as("application/json")
+      }
     }
     res.flatten
   }
 
+  /**
+   * POST endpoint to set proposal status as paid and also set the confirmed tx id
+   * @param requestId proposal id
+   */
   def proposalSetPaid(requestId: Long) = Action(parse.json).async { implicit request =>
     val txId = (request.body \\ "txId").head.as[String]
     val res = requests.byId(requestId).map(proposal => {
@@ -438,44 +509,14 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
         }
       }
     }).recover {
-      case e: Exception => Future{BadRequest(
-        s"""{
-           |  "message": "${e.getMessage}",
-           |  "success": false
-           |}""".stripMargin).as("application/json")}
+      case e: Exception => Future {
+        BadRequest(
+          s"""{
+             |  "message": "${e.getMessage}",
+             |  "success": false
+             |}""".stripMargin).as("application/json")
+      }
     }
     res.flatten
   }
-
-  def test(reqId: Long) = Action.async { implicit request =>
-    teams.getMembers(reqId).map(res => {
-      val lst = res.map(rs => rs.toJson).mkString(",")
-      Ok(
-        s"""[
-           |$lst
-           |]""".stripMargin
-      ).as("application/json")
-    })
-  }
-
-  /**
-   * Creates an Action that returns a plain text message after a delay
-   * of 1 second.
-   *
-   * The configuration in the `routes` file means that this method
-   * will be called when the application receives a `GET` request with
-   * a path of `/message`.
-   */
-  def message = Action.async {
-    getFutureMessage(1.second).map { msg => Ok(msg) }
-  }
-
-  private def getFutureMessage(delayTime: FiniteDuration): Future[String] = {
-    val promise: Promise[String] = Promise[String]()
-    actorSystem.scheduler.scheduleOnce(delayTime) {
-      promise.success("Hi!")
-    }(actorSystem.dispatcher) // run scheduled tasks using the actor system's dispatcher
-    promise.future
-  }
-
 }
