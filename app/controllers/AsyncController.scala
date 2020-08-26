@@ -58,10 +58,10 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
    * @param name team name
    */
   def teamList(name: String) = Action.async { implicit request =>
-    if (name.isBlank)
+    if (name.trim.isEmpty)
       teams.all().map(teams => Ok(views.html.team_list(teams)))
     else
-      teams.search("%" + name + "%").map(teams => Ok(views.html.team_list(teams)))
+      teams.search("%" + name.trim + "%").map(teams => Ok(views.html.team_list(teams)))
   }
 
   /**

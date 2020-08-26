@@ -2,6 +2,9 @@
 @import views.html.helper.form
 @()(implicit header: RequestHeader)
     @main("Create a New Team") {
+        <div class="container d-flex justify-content-center pb-3">
+            <h5>New Team</h5>
+        </div>
         <form id="createTeamForm" method="post" action="@routes.AsyncController.createTeam()">
             @CSRF.formField
             <div class="form-group row">
@@ -12,29 +15,29 @@
                 </div>
             </div>
             <div class="form-group row">
-                <label for="address" class="col-sm-2 col-form-label">Ergo address</label>
+                <label for="address" class="col-sm-2 col-form-label">Address</label>
                 <div class="col-sm-10">
                     <input name="address" type="text" class="form-control" id="address" placeholder="4MQyML64GnzMxZgm" required>
                     <small id="emailHelp" class="form-text text-muted">
-                        Distributed signature address protecting boxes, e.g. threshold signature.</small>
+                        ZK treasury address protecting boxes, e.g. threshold signature. Please avoid putting public keys in registers since there may be boxes for the address that are not spendable by your team!</small>
                 </div>
             </div>
             <div class="form-group row">
-                <label for="pks" class="col-sm-2 col-form-label">Public keys</label>
+                <label for="pks" class="col-sm-2 col-form-label">Members</label>
                 <div class="col-sm-10">
                     <textarea rows="7" name="members" class="form-control" id="members" required>
-[{
-  "nick": "jack",
-  "pk": "02b353d..."
- }, {
-  "nick": "john",
-  "pk": "0354efc..."
- }, {
-  "nick": "another nick name",
-  "pk": "0235647..."
-}]</textarea>
+                        [{
+                        "nick": "jack",
+                        "pk": "02b353d..."
+                        }, {
+                        "nick": "john",
+                        "pk": "0354efc..."
+                        }, {
+                        "nick": "another nick name",
+                        "pk": "0235647..."
+                        }]</textarea>
                     <small id="emailHelp" class="form-text text-muted">
-                        List of members participating in the signature. e.g. pkA, pkB, pkC in case of "atLeast(2, Coll(proveDlog(pkA), proveDlog(pkB), proveDlog(pkC)))"
+                        List of members participating in the signature. e.g. pkA, pkB, pkC in case of "atLeast(2, Coll(proveDlog(pkA), proveDlog(pkB), proveDlog(pkC)))". Nick names will be shown only to members to better identify who has approved/rejected proposals!
                     </small>
                 </div>
             </div>
@@ -42,6 +45,9 @@
                 <label for="description" class="col-sm-2 col-form-label">Description</label>
                 <div class="col-sm-10">
                     <textarea name="description" class="form-control" id="description" placeholder="This team includes all Ergo board members and ..." required></textarea>
+                    <small id="emailHelp" class="form-text text-muted">
+                        A description of the team.
+                    </small>
                 </div>
             </div>
             <button class="btn btn-outline-success my-2 my-sm-0" >Create</button>

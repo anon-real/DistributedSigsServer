@@ -1,84 +1,88 @@
 @import views.html.helper.CSRF
 @(teams: Seq[Team])(implicit header: RequestHeader)
-    @main("Teams List") {
-        @if(teams.isEmpty) {
-            <div class="jumbotron jumbotron-fluid">
-                <div class="container d-flex justify-content-center ">
-                    <p class="lead">
-                        No team has been found! Add a team <a href="@routes.AsyncController.createTeamFrom()"> here.</a></p>
+@main("Teams List") {
+    <div class="container d-flex justify-content-center pb-3">
+        <h5>List of Teams</h5>
+    </div>
+
+    @if(teams.isEmpty) {
+        <div class="jumbotron jumbotron-fluid">
+            <div class="container d-flex justify-content-center ">
+                <p class="lead">
+                    No team has been found! Add a team <a href="@routes.AsyncController.createTeamFrom()"> here.</a></p>
+            </div>
+        </div>
+    } else {
+        @for(team <- teams) {
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">@team.name</h5>
+                    <p style="white-space: pre-line" class="card-text">@team.description</p>
+                    <span data-toggle="modal" data-target="#modal@team.id">
+                        <a href="#" class="card-link" data-toggle="tooltip" data-placement="bottom" title="Add your proposal!">
+                            Create a proposal
+                        </a>
+                        <a class="card-link" href="@routes.AsyncController.proposalList(team.id.get)">Go to proposals</a>
+
+                    </span>
                 </div>
             </div>
-        } else {
-            @for(team <- teams) {
-                <div class="card text-center">
-                    <div class="card-body">
-                        <h5 class="card-title">@team.name</h5>
-                        <p style="white-space: pre-line" class="card-text">@team.description</p>
-                        <span data-toggle="modal" data-target="#modal@team.id">
-                            <a href="#" class="card-link" data-toggle="tooltip" data-placement="bottom" title="Add your proposal!">
-                            Create a proposal
-                            </a>
-                            <a class="card-link" href="@routes.AsyncController.proposalList(team.id.get)">Go to proposals</a>
+            <br/>
 
-                        </span>
-                    </div>
-                </div>
-                <br/>
-
-                <form method="post" action="@routes.AsyncController.newRequest()">
-                    @CSRF.formField
-                <div class="modal fade bd-example-modal-lg" id="modal@team.id.get" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                        <div class="modal-dialog modal-lg" role="document">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="exampleModalLabel">New proposal for @team.name</h5>
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
+            <form method="post" action="@routes.AsyncController.newRequest()">
+                @CSRF.formField
+            <div class="modal fade bd-example-modal-lg" id="modal@team.id.get" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="exampleModalLabel">New proposal for @team.name</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" id="team+id" name="team_id" value=@team.id.get>
+                            <div class="form-group row">
+                                <label for="name" class="col-sm-2 col-form-label">Title</label>
+                                <div class="col-sm-10">
+                                    <input name="title" type="text" class="form-control" id="name" placeholder="distributed signatures web app" required>
+                                    <small id="emailHelp" class="form-text text-muted">A title for your proposal.</small>
+                                </div>
                             </div>
-                            <div class="modal-body">
-                                <input type="hidden" id="team+id" name="team_id" value=@team.id.get>
-                                <div class="form-group row">
-                                    <label for="name" class="col-sm-2 col-form-label">Title</label>
-                                    <div class="col-sm-10">
-                                        <input name="title" type="text" class="form-control" id="name" placeholder="distributed signatures web app" required>
-                                        <small id="emailHelp" class="form-text text-muted">A title for your proposal.</small>
-                                    </div>
+                            <div class="form-group row">
+                                <label for="name" class="col-sm-2 col-form-label">Requested fund</label>
+                                <div class="col-sm-10">
+                                    <input name="amount" type="number" step="0.01" class="form-control" id="name" placeholder="100" required>
+                                    <small id="emailHelp" class="form-text text-muted">Your requested fund in ERGs.</small>
                                 </div>
-                                <div class="form-group row">
-                                    <label for="name" class="col-sm-2 col-form-label">Requested fund</label>
-                                    <div class="col-sm-10">
-                                        <input name="amount" type="number" step="0.01" class="form-control" id="name" placeholder="100" required>
-                                        <small id="emailHelp" class="form-text text-muted">Your requested fund in ERGs.</small>
-                                    </div>
-                                </div>
-                                <div class="form-group row">
-                                    <label for="address" class="col-sm-2 col-form-label">Ergo address</label>
-                                    <div class="col-sm-10">
-                                        <input name="address" type="text" class="form-control" id="address" placeholder="4MQyML64GnzMxZgm" required>
-                                        <small id="emailHelp" class="form-text text-muted">
+                            </div>
+                            <div class="form-group row">
+                                <label for="address" class="col-sm-2 col-form-label">Ergo address</label>
+                                <div class="col-sm-10">
+                                    <input name="address" type="text" class="form-control" id="address" placeholder="4MQyML64GnzMxZgm" required>
+                                    <small id="emailHelp" class="form-text text-muted">
                                             In case of proposal approval, requested fund will be sent to this address!</small>
-                                    </div>
                                 </div>
-                                <div class="form-group row">
-                                    <label for="description" class="col-sm-2 col-form-label">Description</label>
-                                    <div class="col-sm-10">
-                                        <textarea name="description" class="form-control" id="description" placeholder="The goal of this proposal is to..." required></textarea>
-                                        <small id="descHelp" class="form-text text-muted">All the necessary info for the team to make a decision about your proposal!</small>
-                                    </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="description" class="col-sm-2 col-form-label">Description</label>
+                                <div class="col-sm-10">
+                                    <textarea name="description" class="form-control" id="description" placeholder="The goal of this proposal is to..." required></textarea>
+                                    <small id="descHelp" class="form-text text-muted">All the necessary info for the team to make a decision about your proposal!</small>
                                 </div>
+                            </div>
 
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                                <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Add</button>
-                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Add</button>
                         </div>
                     </div>
                 </div>
-                </form>
-
-            }
+            </div>
+            </form>
 
         }
+
     }
+}
