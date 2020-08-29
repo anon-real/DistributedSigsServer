@@ -32,11 +32,13 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
     val reqMembers = (request.body \\ "members").head.as[List[JsValue]]
     val name = (request.body \\ "name").head.as[String]
     val description = (request.body \\ "description").head.as[String]
-    val address = (request.body \\ "address").head.as[String]
-    val res = teams.insert(Team(name, description, address)).map(id => {
+    val address = (request.body \\ "address").head.as[String].trim
+    val tokenId = (request.body \\ "tokenId").head.as[String].trim
+    val assetName = (request.body \\ "assetName").head.as[String]
+    val res = teams.insert(Team(name, description, address, assetName, tokenId)).map(id => {
       reqMembers.foreach(mem => {
         val nick = (mem \\ "nick").head.as[String]
-        val pk = (mem \\ "pk").head.as[String]
+        val pk = (mem \\ "pk").head.as[String].trim
         members.insert(Member(pk, nick, id))
       })
     })

@@ -52,8 +52,8 @@
                             <div class="form-group row">
                                 <label for="name" class="col-sm-2 col-form-label">Requested fund</label>
                                 <div class="col-sm-10">
-                                    <input name="amount" type="number" step="0.01" class="form-control" id="name" placeholder="100" required>
-                                    <small id="emailHelp" class="form-text text-muted">Your requested fund in ERGs.</small>
+                                    <input name="amount" type="number" step="@{if (team.assetName == "ERG") 0.01 else 1}" class="form-control" id="name" placeholder="100" required>
+                                    <small id="emailHelp" class="form-text text-muted">Your requested fund in @{if (team.assetName == "ERG") "ERG" else team.tokenId.slice(0, 15) + "... token"}</small>
                                 </div>
                             </div>
                             <div class="form-group row">

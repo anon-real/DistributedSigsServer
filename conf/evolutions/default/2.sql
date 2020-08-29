@@ -1,0 +1,9 @@
+-- Update Team
+
+-- !Ups
+ALTER TABLE Team ADD asset_name VARCHAR(40) NOT NULL DEFAULT 'ERG';
+ALTER TABLE Team ADD token_id VARCHAR(255) NOT NULL DEFAULT '';
+
+-- !Downs
+ALTER TABLE Team DROP COLUMN asset_name;
+ALTER TABLE Team DROP COLUMN token_id;

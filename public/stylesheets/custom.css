@@ -1,0 +1,15 @@
+[data-role="dynamic-fields"] > .form-inline + .form-inline {
+    margin-top: 0.5em;
+}
+
+[data-role="dynamic-fields"] > .form-inline [data-role="add"] {
+    display: none;
+}
+
+[data-role="dynamic-fields"] > .form-inline:last-child [data-role="add"] {
+    display: inline-block;
+}
+
+[data-role="dynamic-fields"] > .form-inline:last-child [data-role="remove"] {
+    display: none;
+}

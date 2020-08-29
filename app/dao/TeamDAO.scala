@@ -13,9 +13,11 @@ trait TeamComponent { self: HasDatabaseConfigProvider[JdbcProfile] =>
   class TeamTable(tag: Tag) extends Table[Team](tag, "TEAM") {
     def id = column[Long]("ID", O.PrimaryKey, O.AutoInc)
     def name = column[String]("NAME")
+    def assetName = column[String]("ASSET_NAME")
+    def tokenId = column[String]("TOKEN_ID")
     def description = column[String]("DESCRIPTION")
     def address = column[String]("ADDRESS")
-    def * = (name, description, address, id.?) <> (Team.tupled, Team.unapply)
+    def * = (name, description, address, assetName, tokenId, id.?) <> (Team.tupled, Team.unapply)
   }
 }
 

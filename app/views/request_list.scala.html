@@ -16,7 +16,7 @@
                 @if(req.status.get == RequestStatus.paid) {
                     <div class="card text-center">
                         <div class="card-body">
-                            <h5 data-toggle="tooltip" data-placement="top" title="@req.amount ERGs" class="card-title">@req.title</h5>
+                            <h5 data-toggle="tooltip" data-placement="top" title="@{if (team.assetName == "ERG") req.amount + " ERG" else req.amount.toLong + " " + team.tokenId.slice(0, 15) + "... token"}" class="card-title">@req.title</h5>
                             <h6 class="card-subtitle mb-2 text-muted">
                                 <a data-toggle="tooltip" data-placement="right" title="see tx @req.txId.get.slice(0, 5)... in explorer" target="_blank" href="https://explorer.ergoplatform.com/en/transactions/@req.txId.get">@req.status</a>
                             </h6>
@@ -27,7 +27,7 @@
                 } else {
                     <div class="card text-center">
                         <div class="card-body">
-                            <h5 data-toggle="tooltip" data-placement="top" title="@req.amount ERGs" class="card-title">@req.title</h5>
+                            <h5 data-toggle="tooltip" data-placement="top" title="@{if (team.assetName == "ERG") req.amount + " ERG" else req.amount.toLong + " " + team.tokenId.slice(0, 15) + "... token"}" class="card-title">@req.title</h5>
                             <h6 class="card-subtitle mb-2 text-muted">@req.status</h6>
                             <p style="white-space: pre-line" class="card-text">@req.description</p>
                         </div>

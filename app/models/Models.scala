@@ -9,13 +9,15 @@ object RequestStatus {
   val paid = "Fund Paid"
 }
 
-case class Team(name: String, description: String, address: String, id: Option[Long] = None) {
+case class Team(name: String, description: String, address: String, assetName: String, tokenId: String, id: Option[Long] = None) {
   def toJson: String = {
     val desc = description.replace("\n", "\\n")
     s"""{
       |  "name": "$name",
       |  "description": "$desc",
       |  "address": "$address",
+      |  "assetName": "$assetName",
+      |  "tokenId": "$tokenId",
       |  "id": ${id.get}
       |}""".stripMargin
   }
