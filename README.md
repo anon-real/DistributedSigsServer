@@ -11,9 +11,9 @@ replace 9000 with your desired port.
 ### Jar file
 You can download the client's jar file [here](https://github.com/anon-real/DistributedSigsServer/releases). To run the client app:
 ```bash
-java -jar ZKTreasury-client-{version}.jar
+java -jar ZKTreasury-server-{version}.jar
 # similarly if you want to provide config file:
-java -jar -Dconfig.file="path/to/your/config/file" ZKTreasury-client-{version}.jar
+java -jar -Dconfig.file="path/to/your/config/file" ZKTreasury-server-{version}.jar
 
 ```
 If you want to run the client on different port also add `-Dhttp.port=8000` and replace 8000 with your desired port.
