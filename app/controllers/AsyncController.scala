@@ -5,8 +5,9 @@ import dao._
 import javax.inject._
 import models.Forms._
 import models._
-import play.api.libs.json.JsValue
+import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
+import helpers.Conf
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -22,35 +23,45 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
    * GET endpoint for team form
    */
   def createTeamFrom = Action { implicit request =>
-    Ok(views.html.create_team())
+    if (Conf.publicTeamCreation) {
+      Ok(views.html.create_team())
+    } else {
+      BadRequest("Public team creation is not enabled.")
+    }
   }
 
   /**
    * POST endpoint to create team
    */
   def createTeam = Action(parse.json).async { implicit request =>
-    val reqMembers = (request.body \\ "members").head.as[List[JsValue]]
-    val name = (request.body \\ "name").head.as[String]
-    val description = (request.body \\ "description").head.as[String]
-    val address = (request.body \\ "address").head.as[String].trim
-    val tokenId = (request.body \\ "tokenId").head.as[String].trim
-    val assetName = (request.body \\ "assetName").head.as[String]
-    val res = teams.insert(Team(name, description, address, assetName, tokenId)).map(id => {
-      reqMembers.foreach(mem => {
-        val nick = (mem \\ "nick").head.as[String]
-        val pk = (mem \\ "pk").head.as[String].trim
-        members.insert(Member(pk, nick, id))
+    if (Conf.publicTeamCreation) {
+      val reqMembers = (request.body \\ "members").head.as[List[JsValue]]
+      val name = (request.body \\ "name").head.as[String]
+      val description = (request.body \\ "description").head.as[String]
+      val address = (request.body \\ "address").head.as[String].trim
+      val tokenId = (request.body \\ "tokenId").head.as[String].trim
+      val assetName = (request.body \\ "assetName").head.as[String]
+      val res = teams.insert(Team(name, description, address, assetName, tokenId)).map(id => {
+        reqMembers.foreach(mem => {
+          val nick = (mem \\ "nick").head.as[String]
+          val pk = (mem \\ "pk").head.as[String].trim
+          members.insert(Member(pk, nick, id))
+        })
       })
-    })
-    res.map(_ => Ok(
-      s"""{
-         |  "redirect": "${routes.AsyncController.teamList(name)}"
-         |}""".stripMargin).as("application/json")
-    ).recover {
-      case e: Exception => BadRequest(
+      res.map(_ => Ok(
         s"""{
-           |  "message": "${e.getMessage}"
+           |  "redirect": "${routes.AsyncController.teamList(name)}"
            |}""".stripMargin).as("application/json")
+      ).recover {
+        case e: Exception => BadRequest(
+          s"""{
+             |  "message": "${e.getMessage}"
+             |}""".stripMargin).as("application/json")
+      }
+    } else {
+      Future {
+        BadRequest("Public team creation is not enabled.")
+      }
     }
   }
 
@@ -98,7 +109,7 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
    */
   def newCommitment(requestId: Long) = Action(parse.json).async { implicit request =>
     val body = request.body
-    val a = (body \\ "a").head.as[String]
+    val a = Json.stringify((body \ "a").get)
     val memberId = (body \\ "memberId").head.as[Long]
     val memberOk = requests.isMemberPartOf(requestId, memberId)
     memberOk.map(isOk => {
@@ -439,6 +450,33 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
   }
 
   /**
+   * GET endpoint for getting a proposal by id
+   *
+   * @param reqId proposal id
+   */
+  def getProposalById(reqId: Long) = Action.async { implicit request =>
+    requests.byId(reqId).map(req => {
+      teams.byId(req.teamId).map(team => {
+        Ok(
+          s"""{
+            |  "team": ${team.toJson},
+            |  "proposal": ${req.toJson()}
+            |}""".stripMargin).as("application/json")
+      })
+    }).flatten.recover {
+      case e: Exception =>
+        e.printStackTrace()
+        val err = e.getMessage.replace("\"", "").replace("\n", "")
+        BadRequest(
+          s"""{
+             |  "success": false,
+             |  "message": "$err"
+             |}""".stripMargin
+        ).as("application/json")
+    }
+  }
+
+  /**
    * POST endpoint to make the final decision about a proposal
    * call this if enough approvals/rejections has been collected to make the decision
    *
@@ -449,6 +487,7 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
     val res = requests.byId(reqId).map(proposal => {
       if (proposal.status.get == RequestStatus.pendingApproval) {
         val status = if (approved) RequestStatus.approved else RequestStatus.rejected
+        if (!approved) transactions.deleteById(reqId)
         proposal.status = Some(status)
         requests.updateById(proposal).map(_ => {
           Ok("{}").as("application/json")
@@ -491,6 +530,7 @@ class AsyncController @Inject()(teams: TeamDAO, requests: RequestDAO, commitment
       if (proposal.status.get == RequestStatus.approved) {
         proposal.status = Some(RequestStatus.paid)
         proposal.txId = Some(txId)
+        transactions.deleteById(requestId)
         requests.updateById(proposal).map(_ => {
           Ok("{}").as("application/json")
 

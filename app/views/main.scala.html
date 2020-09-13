@@ -1,9 +1,3 @@
-@*
-* This template is called from the `index` template. This template
-* handles the rendering of the page header and body tags. It takes
-* two arguments, a `String` for the title of the page and an `Html`
-* object to insert into the body of the page.
-*@
 @(title: String)(content: Html)
 
 <!DOCTYPE html>
@@ -26,11 +20,12 @@
                 <input name="name" class="form-control mr-sm-2" type="search" placeholder="Team name" aria-label="Search" required>
                 <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search team</button>
             </form>
-            <a href="@routes.AsyncController.createTeamFrom()"><button class="btn btn-outline-success my-2 my-sm-0" type="submit">Create a team</button></a>
+            @if(helpers.Conf.publicTeamCreation) {
+                <a href="@routes.AsyncController.createTeamFrom()"><button class="btn btn-outline-success my-2 my-sm-0" type="submit">
+                    Create a team</button></a>
+            }
         </nav>
         <div class="container p-3 my-3 border bg-light">
-
-
             @content
         </div>
 

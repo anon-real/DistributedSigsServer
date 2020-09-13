@@ -57,7 +57,7 @@ case class Commitment(memberId: Long, a: String, reqId: Long) {
   def toJson: String = {
     s"""{
        |  "memberId": $memberId,
-       |  "a": "$a",
+       |  "a": $a,
        |  "requestId": $reqId
        |}""".stripMargin
   }
@@ -65,7 +65,7 @@ case class Commitment(memberId: Long, a: String, reqId: Long) {
   def toJson(mem: Member): String = {
     s"""{
        |  "memberId": $memberId,
-       |  "a": "$a",
+       |  "a": $a,
        |  "member": ${mem.toJson},
        |  "requestId": $reqId
        |}""".stripMargin

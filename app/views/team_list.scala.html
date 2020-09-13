@@ -18,12 +18,12 @@
                 <div class="card-body">
                     <h5 class="card-title">@team.name</h5>
                     <p style="white-space: pre-line" class="card-text">@team.description</p>
-                    <span data-toggle="modal" data-target="#modal@team.id">
-                        <a href="#" class="card-link" data-toggle="tooltip" data-placement="bottom" title="Add your proposal!">
+                    <span class="m-2" data-toggle="modal" data-target="#modal@team.id">
+                        <button href="#" class="card-link btn btn-outline-primary col-2" data-toggle="tooltip" data-placement="bottom" title="Add your proposal!">
                             Create a proposal
-                        </a>
+                        </button>
                     </span>
-                    <a class="card-link" href="@routes.AsyncController.proposalList(team.id.get)">Go to proposals</a>
+                    <a class="card-link btn btn-outline-primary m-2 col-2" href="@routes.AsyncController.proposalList(team.id.get)">Go to proposals</a>
                 </div>
             </div>
             <br/>

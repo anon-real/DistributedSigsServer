@@ -4,6 +4,7 @@ POST        /team                                  controllers.AsyncController.c
 GET         /team                                  controllers.AsyncController.createTeamFrom
 POST        /proposal                              controllers.AsyncController.newRequest()
 GET         /proposal/:teamId                      controllers.AsyncController.proposalList(teamId: Long)
+GET         /proposal/byId/:requestId              controllers.AsyncController.getProposalById(requestId: Long)
 POST        /proposal/:requestId/commitment        controllers.AsyncController.newCommitment(requestId: Long)
 POST        /proposal/:requestId/proof             controllers.AsyncController.newProof(requestId: Long)
 POST        /proposal/:requestId/decide            controllers.AsyncController.proposalDecision(requestId: Long)

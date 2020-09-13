@@ -38,5 +38,7 @@ class TransactionDAO @Inject() (protected val dbConfigProvider: DatabaseConfigPr
    */
   def byId(reqId: Long): Future[Transaction] = db.run(transactions.filter(tx => tx.requestId === reqId).result.head)
 
+  def deleteById(reqId: Long): Unit = db.run(transactions.filter(tx  => tx.requestId === reqId).delete)
+
   def all(): Future[Seq[Transaction]] = db.run(transactions.result)
 }
