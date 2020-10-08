@@ -1,7 +1,7 @@
 
 name := "ZKTreasury-server"
  
-version := "0.1"
+version := "0.2"
       
 lazy val `distributedsigserver` = (project in file(".")).enablePlugins(PlayScala)
 
